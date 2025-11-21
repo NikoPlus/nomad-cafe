@@ -19,7 +19,7 @@ import {
 
 const items = [
   { title: "Menu", href: "/(app)", icon: Coffee },
-  { title: "Map", href: "/(app)/map", icon: MapPin },
+  { title: "Map", href: "/map", icon: MapPin },
   { title: "My Orders", href: "/(app)/orders/12345", icon: ReceiptText },
   { title: "Settings", href: "#", icon: Settings },
 ]
