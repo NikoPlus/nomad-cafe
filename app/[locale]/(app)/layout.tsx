@@ -12,7 +12,6 @@ import { CartProvider, useCart } from "@/components/cart-context"
 import { cn } from "@/lib/utils"
 import { TonConnectUIProvider, TonConnectButton } from "@tonconnect/ui-react"
 import { LoadingScreen } from "@/components/loading-screen"
-import { useSearchParams } from "next/navigation"
 import { useTranslations } from 'next-intl'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
