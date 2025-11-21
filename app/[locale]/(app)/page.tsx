@@ -16,11 +16,18 @@ export default function Page() {
   const { addItem, subtotalTon } = useCart()
   const t = useTranslations()
   const [openPay, setOpenPay] = React.useState(false)
-  const [category, setCategory] = React.useState<string>("All")
+  const [category, setCategory] = React.useState<string>("")
   const categoryBarRef = React.useRef<HTMLDivElement>(null)
 
-  const categories = React.useMemo(() => ["All", ...new Set(SAMPLE_MENU.map((m) => m.category))], [])
-  const filtered = SAMPLE_MENU.filter((m) => category === "All" || m.category === category)
+  // Set initial category to translated "All" after component mounts
+  React.useEffect(() => {
+    if (!category) {
+      setCategory(t('home.categories.all'))
+    }
+  }, [category, t])
+
+  const categories = React.useMemo(() => [t('home.categories.all'), ...new Set(SAMPLE_MENU.map((m) => m.category))], [t])
+  const filtered = SAMPLE_MENU.filter((m) => category === t('home.categories.all') || m.category === category)
 
   return (
     <main className="pb-24">
@@ -38,7 +45,7 @@ export default function Page() {
           style={{ scrollSnapType: 'x mandatory' }}
         >
           {categories.map((c) => {
-            const translatedCategory = c === "All" ? t('home.categories.all') : t(`categories.${c}`)
+            const translatedCategory = c === t('home.categories.all') ? c : t(`categories.${c}`)
             return (
               <button
                 key={c}

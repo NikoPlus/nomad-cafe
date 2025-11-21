@@ -183,29 +183,33 @@
 /* RTL Support for Farsi */
 [dir="rtl"] {
   direction: rtl;
-  text-align: right;
+  text-align: start;
 }
 
-[dir="rtl"] .flex {
+/* Specific RTL flex adjustments - only for containers that need it */
+[dir="rtl"] .flex-row-reverse {
+  flex-direction: row;
+}
+
+[dir="rtl"] .flex-row {
   flex-direction: row-reverse;
 }
 
-/* Reverse margins and paddings for RTL */
+/* Reverse auto margins for RTL */
 [dir="rtl"] .ml-auto {
-  margin-left: 0;
-  margin-right: auto;
+  margin-left: 0 !important;
+  margin-right: auto !important;
 }
 
 [dir="rtl"] .mr-auto {
-  margin-right: 0;
-  margin-left: auto;
+  margin-right: 0 !important;
+  margin-left: auto !important;
 }
 
-/* Fix icons in RTL */
-[dir="rtl"] svg {
-  transform: scaleX(-1);
-}
-
-[dir="rtl"] .lucide {
+/* Selective icon flipping - only flip directional icons */
+[dir="rtl"] .lucide-arrow-left,
+[dir="rtl"] .lucide-arrow-right,
+[dir="rtl"] .lucide-chevron-left,
+[dir="rtl"] .lucide-chevron-right {
   transform: scaleX(-1);
 }
