@@ -29,6 +29,7 @@ export const getApiDocs = () => {
               wallet_address: { type: 'string', description: 'TON wallet address for payments' },
               distance_m: { type: 'number', format: 'double', description: 'Distance in meters from query location' },
             },
+            required: ['id', 'name', 'address', 'lat', 'lng', 'wallet_address', 'distance_m'],
           },
           OrderItem: {
             type: 'object',
@@ -37,6 +38,7 @@ export const getApiDocs = () => {
               qty: { type: 'number', description: 'Quantity ordered' },
               price_ton: { type: 'number', format: 'double', description: 'Price per item in TON' },
             },
+            required: ['menu_item_id', 'qty', 'price_ton'],
           },
           Order: {
             type: 'object',
@@ -44,6 +46,7 @@ export const getApiDocs = () => {
               id: { type: 'string', format: 'uuid', description: 'Order identifier' },
               total_amount_ton: { type: 'number', format: 'double', description: 'Total amount in TON' },
             },
+            required: ['id', 'total_amount_ton'],
           },
           Payment: {
             type: 'object',
@@ -53,6 +56,7 @@ export const getApiDocs = () => {
               text: { type: 'string', description: 'Payment comment/memo' },
               ton_uri: { type: 'string', description: 'TON payment URI' },
             },
+            required: ['recipient', 'amount_ton', 'text', 'ton_uri'],
           },
           Error: {
             type: 'object',
@@ -132,6 +136,7 @@ export const getApiDocs = () => {
                         description: 'List of items to order',
                       },
                     },
+                    required: ['items'],
                   },
                 },
               },
@@ -205,6 +210,7 @@ export const getApiDocs = () => {
                         message: { type: 'string' },
                         order_id: { type: 'string', format: 'uuid' },
                       },
+                      required: ['success', 'message', 'order_id'],
                     },
                   },
                 },
