@@ -11,59 +11,210 @@ export type MenuItem = {
 
 export const SAMPLE_MENU: MenuItem[] = [
   {
-    id: "latte",
-    title: "Caffè Latte",
-    description: "Rich espresso with steamed milk",
-    priceTon: 0.85,
-    imageUrl: "/caffe-latte.jpg",
-    category: "Coffee",
-    ingredients: ["Espresso", "Steamed Milk", "Milk Foam"],
+    "id": "espresso",
+    "title": "Espresso",
+    "description": "Strong concentrated coffee shot",
+    "priceTon": 0.48,
+    "imageUrl": "/espresso.jpg",
+    "category": "Coffee",
+    "ingredients": ["Espresso"]
   },
   {
-    id: "americano",
-    title: "Americano",
-    description: "Smooth espresso diluted with hot water",
-    priceTon: 0.65,
-    imageUrl: "/americano-coffee.png",
-    category: "Coffee",
-    ingredients: ["Espresso", "Hot Water"],
-    discount: 10,
+    "id": "americano",
+    "title": "Americano",
+    "description": "Espresso blended with hot water",
+    "priceTon": 0.48,
+    "imageUrl": "/americano-coffee.png",
+    "category": "Coffee",
+    "ingredients": ["Espresso", "Hot Water"]
   },
   {
-    id: "croissant",
-    title: "Butter Croissant",
-    description: "Flaky, buttery pastry",
-    priceTon: 0.45,
-    imageUrl: "/butter-croissant.png",
-    category: "Bakery",
-    ingredients: ["Wheat Flour", "Butter", "Yeast", "Sugar"],
+    "id": "cappuccino",
+    "title": "Cappuccino",
+    "description": "Espresso with steamed milk and foam",
+    "priceTon": 0.60,
+    "imageUrl": "/cappuccino.jpg",
+    "category": "Coffee",
+    "ingredients": ["Espresso", "Steamed Milk", "Milk Foam"]
   },
   {
-    id: "matcha",
-    title: "Matcha Latte",
-    description: "Ceremonial matcha with milk",
-    priceTon: 0.9,
-    imageUrl: "/matcha-latte.png",
-    category: "Tea",
-    ingredients: ["Matcha Powder", "Steamed Milk", "Honey"],
-    discount: 15,
+    "id": "latte",
+    "title": "Caffè Latte",
+    "description": "Smooth espresso with steamed milk",
+    "priceTon": 0.60,
+    "imageUrl": "/caffe-latte.jpg",
+    "category": "Coffee",
+    "ingredients": ["Espresso", "Steamed Milk"]
   },
   {
-    id: "espresso",
-    title: "Espresso",
-    description: "Pure, strong Italian coffee",
-    priceTon: 0.55,
-    imageUrl: "/espresso-shot.jpg",
-    category: "Coffee",
-    ingredients: ["Arabica Coffee Beans"],
+    "id": "mocha",
+    "title": "Mocha",
+    "description": "Espresso mixed with chocolate and milk",
+    "priceTon": 0.66,
+    "imageUrl": "/matcha-latte.png",
+    "category": "Coffee",
+    "ingredients": ["Espresso", "Milk", "Chocolate"]
   },
   {
-    id: "chai",
-    title: "Chai Latte",
-    description: "Spiced tea with steamed milk",
-    priceTon: 0.75,
-    imageUrl: "/chai-latte.png",
-    category: "Tea",
-    ingredients: ["Black Tea", "Cinnamon", "Cardamom", "Ginger", "Steamed Milk"],
+    "id": "caramel-macchiato",
+    "title": "Caramel Macchiato",
+    "description": "Espresso, steamed milk, and caramel",
+    "priceTon": 0.66,
+    "imageUrl": "/caramel-macchiato.jpg",
+    "category": "Coffee",
+    "ingredients": ["Espresso", "Steamed Milk", "Caramel"]
   },
+  {
+    "id": "hot-chocolate",
+    "title": "Hot Chocolate",
+    "description": "Creamy hot cocoa drink",
+    "priceTon": 0.52,
+    "imageUrl": "/hot-chocolate.jpg",
+    "category": "Hot Drinks",
+    "ingredients": ["Milk", "Cocoa", "Sugar"]
+  },
+  {
+    "id": "masala-tea",
+    "title": "Masala Tea",
+    "description": "Spiced Indian-style milk tea",
+    "priceTon": 0.46,
+    "imageUrl": "/masala-tea.jpg",
+    "category": "Tea",
+    "ingredients": ["Black Tea", "Milk", "Spices"]
+  },
+  {
+    "id": "black-tea",
+    "title": "Black Tea",
+    "description": "Classic brewed black tea",
+    "priceTon": 0.54,
+    "imageUrl": "/black-tea.jpg",
+    "category": "Tea",
+    "ingredients": ["Black Tea"]
+  },
+  {
+    "id": "hot-fruit",
+    "title": "Hot Fruit Drink",
+    "description": "Hot fruit infusion with ginger or cinnamon",
+    "priceTon": 0.54,
+    "imageUrl": "/hot-fruit.jpg",
+    "category": "Hot Drinks",
+    "ingredients": ["Fruit Mix", "Hot Water", "Ginger or Cinnamon"]
+  },
+  {
+    "id": "dam-tea",
+    "title": "Dami Black Tea",
+    "description": "Traditional brewed black tea",
+    "priceTon": 0.26,
+    "imageUrl": "/dam-tea.jpg",
+    "category": "Tea",
+    "ingredients": ["Black Tea"]
+  },
+  {
+    "id": "lemonade",
+    "title": "Lemonade",
+    "description": "Refreshing lemonade, simple or ginger",
+    "priceTon": 0.54,
+    "imageUrl": "/lemonade.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Lemon", "Water", "Sugar"]
+  },
+  {
+    "id": "ruby-rush",
+    "title": "Ruby Rush",
+    "description": "Fruity red refreshing drink",
+    "priceTon": 0.54,
+    "imageUrl": "/ruby-rush.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Fruit Mix", "Ice", "Sweetener"]
+  },
+  {
+    "id": "pina-colada",
+    "title": "Pina Colada",
+    "description": "Pineapple and coconut blend",
+    "priceTon": 0.60,
+    "imageUrl": "/pina-colada.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Pineapple", "Coconut Milk", "Ice"]
+  },
+  {
+    "id": "cocospin",
+    "title": "Cocospin",
+    "description": "Coconut-based creamy drink",
+    "priceTon": 0.69,
+    "imageUrl": "/cocospin.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Coconut", "Milk", "Ice"]
+  },
+  {
+    "id": "ice-tea-vanilla",
+    "title": "Iced Tea (Vanilla)",
+    "description": "Cold tea flavored with vanilla",
+    "priceTon": 0.46,
+    "imageUrl": "/iced-tea-vanilla.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Tea", "Vanilla", "Ice"]
+  },
+  {
+    "id": "ice-tea-peach",
+    "title": "Iced Tea (Peach)",
+    "description": "Refreshing peach-flavored iced tea",
+    "priceTon": 0.52,
+    "imageUrl": "/iced-tea-peach.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Tea", "Peach Syrup", "Ice"]
+  },
+  {
+    "id": "ice-tea-pomegranate",
+    "title": "Iced Tea (Pomegranate)",
+    "description": "Cold tea with pomegranate flavor",
+    "priceTon": 0.54,
+    "imageUrl": "/iced-tea-pomegranate.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Tea", "Pomegranate", "Ice"]
+  },
+  {
+    "id": "coconut-choco-frappe",
+    "title": "Coconut Chocolate Frappe",
+    "description": "Blended chocolate frappe with coconut",
+    "priceTon": 0.69,
+    "imageUrl": "/coconut-choco-frappe.jpg",
+    "category": "Cold Drinks",
+    "ingredients": ["Chocolate", "Coconut", "Milk", "Ice"]
+  },
+  {
+    "id": "frappuccino",
+    "title": "Frappuccino",
+    "description": "Iced blended coffee drink",
+    "priceTon": 0.72,
+    "imageUrl": "/frappuccino.jpg",
+    "category": "Coffee",
+    "ingredients": ["Espresso", "Milk", "Ice", "Sugar"]
+  },
+  {
+    "id": "shake-vanilla",
+    "title": "Vanilla Shake",
+    "description": "Creamy vanilla milkshake",
+    "priceTon": 0.63,
+    "imageUrl": "/shake-vanilla.jpg",
+    "category": "Shakes",
+    "ingredients": ["Milk", "Vanilla", "Ice Cream"]
+  },
+  {
+    "id": "shake-peanut",
+    "title": "Peanut Shake",
+    "description": "Rich peanut-flavored milkshake",
+    "priceTon": 0.75,
+    "imageUrl": "/shake-peanut.jpg",
+    "category": "Shakes",
+    "ingredients": ["Milk", "Peanuts", "Ice Cream"]
+  },
+  {
+    "id": "shake-caramel",
+    "title": "Caramel Shake",
+    "description": "Creamy caramel milkshake",
+    "priceTon": 0.69,
+    "imageUrl": "/shake-caramel.jpg",
+    "category": "Shakes",
+    "ingredients": ["Milk", "Caramel", "Ice Cream"]
+  }
 ]
