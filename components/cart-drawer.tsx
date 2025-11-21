@@ -87,8 +87,8 @@ export function CartDrawer({
           </div>
           <div className="mt-3 space-y-3 border-t pt-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Subtotal</span>
-              <span className="text-lg font-bold tabular-nums">{formatTon(subtotalTon)} TON</span>
+              <span className="text-sm text-muted-foreground">{t('payment.subtotal')}</span>
+              <span className="text-lg font-bold tabular-nums">{formatTon(subtotalTon)} {t('cart.ton')}</span>
             </div>
             <SheetFooter>
               <Button 
@@ -97,7 +97,7 @@ export function CartDrawer({
                 onClick={() => onOpenChange(false)}
                 style={{ minHeight: '48px' }}
               >
-                Continue to Checkout
+                {t('payment.title')}
               </Button>
             </SheetFooter>
           </div>

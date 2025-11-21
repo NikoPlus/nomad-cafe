@@ -179,3 +179,33 @@
     animation: spin-slow 3s linear infinite;
   }
 }
+
+/* RTL Support for Farsi */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .flex {
+  flex-direction: row-reverse;
+}
+
+/* Reverse margins and paddings for RTL */
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Fix icons in RTL */
+[dir="rtl"] svg {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .lucide {
+  transform: scaleX(-1);
+}
