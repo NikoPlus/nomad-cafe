@@ -71,6 +71,7 @@ export const COMPONENT_INSTANCES: ComponentInstance[] = [
     active: true,
     props: {
       logoUrl: '/placeholder.svg?height=32&width=32',
+      brandName: 'Nomad-Cafe',
       menu: [
         { label: 'All', target: '/?category=all' },
         { label: 'Coffee', target: '/?category=coffee' },
@@ -185,9 +186,13 @@ export function getPageLayout(tenantId: number, slug: string): PageLayout | null
         if (resolvedProps.source === 'all') {
           resolvedProps.products = SAMPLE_MENU
         } else if (resolvedProps.source === 'category' && resolvedProps.categorySlug) {
-          resolvedProps.products = SAMPLE_MENU.filter(
-            item => item.category === resolvedProps.categorySlug
-          )
+          // Find the category by slug to get its title
+          const category = CATEGORIES.find(c => c.slug === resolvedProps.categorySlug)
+          if (category) {
+            resolvedProps.products = SAMPLE_MENU.filter(
+              item => item.category === category.title
+            )
+          }
         }
       }
 

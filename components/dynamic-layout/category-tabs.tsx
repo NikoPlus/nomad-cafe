@@ -17,7 +17,7 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({ categories = [] }) =
   return (
     <div className="flex gap-3 overflow-x-auto p-4">
       {categories.map((c) => {
-        const translatedTitle = t(`categories.${c.title}`)
+        const translatedTitle = t(`categories.${c.slug}`)
         return (
           <button
             key={c.slug}

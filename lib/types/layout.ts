@@ -57,6 +57,7 @@ export interface PageLayout {
  */
 export interface TopbarProps {
   logoUrl?: string
+  brandName?: string
   menu?: Array<{ label: string; target: string }>
   walletButton?: boolean
 }
