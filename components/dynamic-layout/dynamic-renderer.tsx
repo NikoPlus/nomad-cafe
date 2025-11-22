@@ -11,7 +11,7 @@ import { Footer } from './footer'
 /**
  * Component map - maps component types to React components
  */
-const componentMap: Record<string, React.FC<any>> = {
+const componentMap: Record<string, React.FC<Record<string, unknown>>> = {
   Topbar,
   Hero,
   CategoryTabs,

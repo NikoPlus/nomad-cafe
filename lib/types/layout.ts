@@ -26,7 +26,7 @@ export interface ComponentInstance {
   pageId?: number
   order: number
   type: string
-  props: Record<string, any>
+  props: Record<string, unknown>
   active: boolean
 }
 
@@ -79,7 +79,14 @@ export interface ProductListProps {
   categorySlug?: string
   layout?: 'card' | 'list'
   showPrice?: boolean
-  products?: any[]
+  products?: Array<{
+    id: string
+    title?: string
+    description?: string
+    priceTon: number
+    imageUrl?: string
+    discount?: number
+  }>
 }
 
 export interface FooterProps {
