@@ -13,6 +13,7 @@ import { useCart } from "@/components/cart-context"
 import { formatTon } from "@/utils/ton"
 import { ArrowLeft, Plus, Star } from 'lucide-react'
 import { SAMPLE_MENU } from "../../menu-data"
+import { useTranslations } from 'next-intl'
 
 type Comment = {
   id: string
@@ -49,6 +50,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
   if (!item) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
+        <ItemNotFound />
         <div className="text-center">
           <h2 className="text-2xl font-bold">Item not found</h2>
           <Button asChild className="mt-4">
@@ -62,6 +64,22 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
   return <ItemDetailClient item={item} />
 }
 
+function ItemNotFound() {
+  const t = useTranslations()
+  
+  return (
+    <div className="text-center">
+      <h2 className="text-2xl font-bold">{t('item.notFound')}</h2>
+      <Button asChild className="mt-4">
+        <Link href="/">{t('menu.backToMenu')}</Link>
+      </Button>
+    </div>
+  )
+}
+
+function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
+  const { addItem } = useCart()
+  const t = useTranslations()
 function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
   const { addItem } = useCart()
   const [comments, setComments] = React.useState<Comment[]>(SAMPLE_COMMENTS[item.id] || [])
@@ -94,6 +112,9 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
     setRating(5)
   }
 
+  const itemTitle = t(`items.${item.id}.title`)
+  const itemDescription = t(`items.${item.id}.description`)
+
   return (
     <main className="pb-8">
       <Button asChild variant="ghost" className="mb-4 gap-2">
@@ -108,12 +129,18 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
           <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
             <Image
               src={item.imageUrl || "/placeholder.svg?height=600&width=600&query=cafe+item"}
+              alt={`${itemTitle} from ${t('app.title')}`}
               alt={`${item.title} from Nomad-Cafe`}
               fill
               className="object-cover"
               priority
             />
             <Badge className="absolute left-4 top-4 bg-primary/90 text-primary-foreground backdrop-blur-sm">
+              {t('app.title')}
+            </Badge>
+            {item.discount && (
+              <Badge className="absolute right-4 top-4 bg-secondary/90 text-secondary-foreground backdrop-blur-sm">
+                -{item.discount}% {t('item.off')}
               Nomad-Cafe
             </Badge>
             {item.discount && (
@@ -126,6 +153,9 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
 
         <div className="flex flex-col gap-6">
           <div>
+            <h1 className="text-balance text-3xl font-bold">{itemTitle}</h1>
+            <p className="mt-2 text-pretty leading-relaxed text-muted-foreground">
+              {itemDescription}
             <h1 className="text-balance text-3xl font-bold">{item.title}</h1>
             <p className="mt-2 text-pretty leading-relaxed text-muted-foreground">
               {item.description}
@@ -147,6 +177,17 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
 
           {item.ingredients && item.ingredients.length > 0 && (
             <div>
+              <h3 className="mb-2 text-lg font-semibold">{t('ingredients.title')}</h3>
+              <div className="flex flex-wrap gap-2">
+                {item.ingredients.map((ingredient) => {
+                  const ingredientKey = ingredient.toLowerCase().replace(/ /g, '_')
+                  const translatedIngredient = t(`ingredients.${ingredientKey}`)
+                  return (
+                    <Badge key={ingredient} variant="secondary">
+                      {translatedIngredient}
+                    </Badge>
+                  )
+                })}
               <h3 className="mb-2 text-lg font-semibold">Ingredients</h3>
               <div className="flex flex-wrap gap-2">
                 {item.ingredients.map((ingredient) => (
@@ -161,6 +202,7 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
           <Button
             onClick={() =>
               addItem(
+                { id: item.id, title: itemTitle, priceTon: item.priceTon, imageUrl: item.imageUrl },
                 { id: item.id, title: item.title, priceTon: item.priceTon, imageUrl: item.imageUrl },
                 1
               )
@@ -170,12 +212,18 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
             style={{ minHeight: '56px' }}
           >
             <Plus className="h-5 w-5" />
+            {t('menu.addToCart')}
             Add to Cart
           </Button>
         </div>
       </div>
 
       <div className="mt-12">
+        <h2 className="mb-6 text-2xl font-bold">{t('reviews.title')}</h2>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>{t('reviews.leaveReview')}</CardTitle>
         <h2 className="mb-6 text-2xl font-bold">Customer Reviews</h2>
 
         <Card className="mb-6">
@@ -185,6 +233,7 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
           <CardContent>
             <form onSubmit={handleSubmitComment} className="space-y-4">
               <div>
+                <Label htmlFor="phone">{t('reviews.phoneNumber')} *</Label>
                 <Label htmlFor="phone">Phone Number *</Label>
                 <Input
                   id="phone"
@@ -197,6 +246,11 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
               </div>
 
               <div>
+                <Label htmlFor="name">{t('reviews.fullName')}</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder={t('reviews.fullName')}
                 <Label htmlFor="name">Full Name (Optional)</Label>
                 <Input
                   id="name"
@@ -208,6 +262,7 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
               </div>
 
               <div>
+                <Label htmlFor="rating">{t('reviews.rating')}</Label>
                 <Label htmlFor="rating">Rating</Label>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((r) => (
@@ -230,6 +285,10 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
               </div>
 
               <div>
+                <Label htmlFor="comment">{t('reviews.yourReview')} *</Label>
+                <Textarea
+                  id="comment"
+                  placeholder={t('reviews.reviewPlaceholder')}
                 <Label htmlFor="comment">Your Review *</Label>
                 <Textarea
                   id="comment"
@@ -242,6 +301,7 @@ function ItemDetailClient({ item }: { item: typeof SAMPLE_MENU[0] }) {
               </div>
 
               <Button type="submit" className="w-full" style={{ minHeight: '48px' }}>
+                {t('reviews.submitReview')}
                 Submit Review
               </Button>
             </form>
