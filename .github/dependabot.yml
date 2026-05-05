@@ -5,7 +5,53 @@
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # 监控 npm 依赖更新 (JavaScript/TypeScript)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"            # 每周检查一次
+      day: "monday"                 # 周一执行
+      time: "08:00"                 # UTC 时间 08:00
+    versioning-strategy: increase-if-necessary
+    groups:
+      # 将开发依赖的更新聚合到一个 PR 中
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      # 将生产依赖的更新聚合到另一个 PR 中
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(deps-dev)"
+    reviewers:
+      - "PsymoNiko"                # 指定你为审阅者
+    labels:
+      - "dependencies"
+      - "javascript"
+    open-pull-requests-limit: 5
+    rebase-strategy: "auto"        # 当 PR 合并后自动变基
+
+  # 监控 GitHub Actions 的更新
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    groups:
+      # 聚合所有 GitHub Actions 的更新
+      github-actions:
+        patterns:
+          - "*"                    # 匹配所有 Actions
+    commit-message:
+      prefix: "chore(ci)"
+    reviewers:
+      - "PsymoNiko"
+    labels:
+      - "dependencies"
+      - "github-actions"
