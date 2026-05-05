@@ -6,12 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
+  contents"
   cancel-in-progress: false
 
 jobs:
@@ -38,7 +33,7 @@ jobs:
           NEXT_EXPORT: "true"
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v2 # Upgraded to the latest version
         with:
           path: './out'
 
@@ -48,8 +43,8 @@ jobs:
     permissions:
       contents: read
       pages: write
-      id-token: write
+     : write
     steps:
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
