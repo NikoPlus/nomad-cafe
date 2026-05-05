@@ -1,8 +1,8 @@
-name: Deploy to GitHub Pages
+name: Deploy Next.js site to Pages
 
 on:
   push:
-    branches: ['main']
+    branches: ["page"]
   workflow_dispatch:
 
 permissions:
@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -24,16 +24,15 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
-      # Using npm instead of pnpm to avoid lockfile issues
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build static site
+      - name: Build static export
         run: npm run build
         env:
-          GITHUB_PAGES: true
+          NEXT_EXPORT: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
