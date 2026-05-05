@@ -1,0 +1,75 @@
+name: Lint and Create Issue on Failure
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run linter and capture output
+        id: lint_step
+        continue-on-error: true
+        run: pnpm run lint 2>&1 | tee eslint-output.txt
+
+      - name: Upload ESLint output as artifact
+        if: steps.lint_step.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-output
+          path: eslint-output.txt
+          retention-days: 7
+
+      - name: Create Issue from lint errors
+        if: steps.lint_step.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('eslint-output.txt', 'utf8');
+            const errorLines = output.split('\n')
+              .filter(l => l.includes('error'));
+            const summary = errorLines.slice(0, 10).join('\n');
+            const fullLog = output.slice(0, 5000);
+            const title = `🧹 Linting Failed: ${context.sha.slice(0,7)}`;
+            const body = `### Linter failed on commit ${context.sha}.
+            \n**Workflow:** [${context.runId}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            \n**First few errors:**
+            \n\`\`\`
+            ${summary}
+            \`\`\`
+            <details><summary>Detailed Output (first 5000 chars)</summary>
+            \n\`\`\`
+            ${fullLog}
+            \`\`\`
+            </details>`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['automated', 'linting', 'tech-debt']
+            });
