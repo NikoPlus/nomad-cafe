@@ -33,7 +33,12 @@ jobs:
         run: echo "NEXT_PUBLIC_BASE_PATH=/nomad-cafe" >> $GITHUB_ENV
 
       - name: Build static export
-        run: npm run1
+        run: npm run build
+        env:
+          NEXT_EXPORT: "true"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
         with:
           path: './out'
 
