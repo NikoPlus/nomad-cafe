@@ -27,7 +27,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: npm i
 
       - name: Set environment variables
         run: echo "NEXT_PUBLIC_BASE_PATH=/nomad-cafe" >> $GITHUB_ENV
