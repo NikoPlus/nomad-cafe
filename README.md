@@ -1,17 +1,7 @@
 
 # ☕ Nomad Cafe: TON-Powered Coffee Ordering dApp
 
-```
 
----
-
-| \ | |                     /  __ 
-|  \| | ___  _ __ ___  ___  | /  \/  ___  _ __ ___
-| .  |/ _ \| '_  _ \/ | | |     / _ \| '/ _ 
-| |\  | () | | | | | \__ \ | \_/\| () | | |  __/
-\_| \_/\___/|| || ||___/  \___/ \___/||  \___/
-
-```
 **Nomad Cafe** isn't just another coffee shop experience—it's a complete **on-chain ordering dApp** built to help digital nomads find their perfect work-friendly cafe and pay with TON cryptocurrency.
 
 ## 🚀 Deploy Your Own
