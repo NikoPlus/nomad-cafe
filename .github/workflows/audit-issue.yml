@@ -62,29 +62,51 @@ jobs:
         run: |
           VULN_COUNT=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo "0")
           TSC_ERRORS=$(cat tsc-output.txt 2>/dev/null | wc -l)
-
+          
           if [ "$VULN_COUNT" -gt 0 ] || [ "$TSC_ERRORS" -gt 0 ]; then
             ISSUE_TITLE="🚨 Audit Report: Issues Found"
-            ISSUE_BODY="# 🚨 Automated Audit Report\n\n"
-            ISSUE_BODY+="**Mention:** @${{ steps.get_user.outputs.username }}\n\n"
-            ISSUE_BODY+="## Issues found\n\n"
+            cat > issue_body.md << 'EOF'
+            # 🚨 Automated Audit Report
+            
+            EOF
+            echo "**Mention:** @${{ steps.get_user.outputs.username }}" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "## Issues found" >> issue_body.md
+            echo "" >> issue_body.md
             if [ "$VULN_COUNT" -gt 0 ]; then
-              ISSUE_BODY+="### 📦 npm Audit\n\nFound **$VULN_COUNT** vulnerability(ies).\n\n"
-              ISSUE_BODY+="\`\`\`json\n$(jq '.vulnerabilities' audit-results.json)\n\`\`\`\n\n"
+              echo "### 📦 npm Audit" >> issue_body.md
+              echo "" >> issue_body.md
+              echo "Found **$VULN_COUNT** vulnerability(ies)." >> issue_body.md
+              echo "" >> issue_body.md
+              echo '```json' >> issue_body.md
+              jq '.vulnerabilities' audit-results.json >> issue_body.md
+              echo '```' >> issue_body.md
+              echo "" >> issue_body.md
             fi
             if [ "$TSC_ERRORS" -gt 0 ]; then
-              ISSUE_BODY+="### 🔷 TypeScript Errors\n\n\`\`\`\n$(cat tsc-output.txt)\n\`\`\`\n\n"
+              echo "### 🔷 TypeScript Errors" >> issue_body.md
+              echo "" >> issue_body.md
+              echo '```' >> issue_body.md
+              cat tsc-output.txt >> issue_body.md
+              echo '```' >> issue_body.md
+              echo "" >> issue_body.md
             fi
           else
             ISSUE_TITLE="✅ Audit Report: All Checks Passed"
-            ISSUE_BODY="# ✅ Automated Audit Report\n\n"
-            ISSUE_BODY+="**Mention:** @${{ steps.get_user.outputs.username }}\n\n"
-            ISSUE_BODY+="**Status:** All audits passed successfully.\n\n"
-            ISSUE_BODY+="- **npm audit:** No vulnerabilities\n"
-            ISSUE_BODY+="- **TypeScript check:** No type errors\n\n"
+            cat > issue_body.md << 'EOF'
+            # ✅ Automated Audit Report
+            
+            EOF
+            echo "**Mention:** @${{ steps.get_user.outputs.username }}" >> issue_body.md
+            echo "" >> issue_body.md
+            echo "**Status:** All audits passed successfully." >> issue_body.md
+            echo "" >> issue_body.md
+            echo "- **npm audit:** No vulnerabilities" >> issue_body.md
+            echo "- **TypeScript check:** No type errors" >> issue_body.md
+            echo "" >> issue_body.md
           fi
-          ISSUE_BODY+="_Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ")_"
-          echo "$ISSUE_BODY" > issue_body.md
+          echo "_Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ")_" >> issue_body.md
+          
           echo "ISSUE_TITLE=$ISSUE_TITLE" >> $GITHUB_ENV
           if [ "$VULN_COUNT" -gt 0 ] || [ "$TSC_ERRORS" -gt 0 ]; then
             echo "HAS_PROBLEMS=true" >> $GITHUB_ENV
@@ -92,46 +114,30 @@ jobs:
             echo "HAS_PROBLEMS=false" >> $GITHUB_ENV
           fi
 
-      - name: Create or update audit issue
+      - name: Create issue with PAT (for assignment)
         if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let issueBody = fs.readFileSync('issue_body.md', 'utf8');
-            const issueTitle = process.env.ISSUE_TITLE;
-            const hasProblems = process.env.HAS_PROBLEMS === 'true';
-
-            const issues = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'automated-audit'
-            });
-
-            const existingIssue = issues.data.find(issue => 
-              issue.title === '✅ Audit Report: All Checks Passed' || 
-              issue.title === '🚨 Audit Report: Issues Found'
-            );
-
-            const labels = ['automated-audit'];
-            if (hasProblems) labels.push('bug');
-
-            if (existingIssue) {
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existingIssue.number,
-                title: issueTitle,
-                body: issueBody,
-                labels: labels
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: issueTitle,
-                body: issueBody,
-                labels: labels
-              });
-            }
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          if [ -f issue_body.md ]; then
+            BODY=$(cat issue_body.md)
+          else
+            BODY="Audit completed."
+          fi
+          
+          # Check if an issue already exists
+          if gh issue list --label "automated-audit" --state open | grep -q "Automated Audit"; then
+            # Update existing issue
+            ISSUE_NUMBER=$(gh issue list --label "automated-audit" --state open --json number --jq '.[0].number')
+            gh issue edit $ISSUE_NUMBER \
+              --title "$ISSUE_TITLE" \
+              --body "$BODY" \
+              --add-label "automated-audit,$([ "$HAS_PROBLEMS" = "true" ] && echo "bug" || echo "")"
+          else
+            # Create new issue with assignee
+            gh issue create \
+              --title "$ISSUE_TITLE" \
+              --body "$BODY" \
+              --label "automated-audit,$([ "$HAS_PROBLEMS" = "true" ] && echo "bug" || echo "")" \
+              --assignee "${{ steps.get_user.outputs.username }}"
+          fi
