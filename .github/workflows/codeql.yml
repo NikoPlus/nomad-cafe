@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '23 6 * * 1'   # 每周一 06:23 UTC
+    - cron: '23 6 * * 1'   # Every Monday at 06:23 UTC
 
 permissions:
   security-events: write
@@ -31,7 +31,7 @@ jobs:
       matrix:
         include:
           - language: javascript-typescript
-            build-mode: none   # 直接分析代码，无需构建
+            build-mode: none   # No build needed for JS/TS analysis
 
     steps:
     - name: Checkout repository
@@ -42,7 +42,6 @@ jobs:
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
-        # 启用更全面的查询包
         queries: |
           +security-extended
           +security-and-quality
