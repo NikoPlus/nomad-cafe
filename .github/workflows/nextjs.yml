@@ -38,7 +38,7 @@ jobs:
           NEXT_EXPORT: "true"
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2 # Upgraded to the latest version
+        uses: actions/upload-pages-artifact@v1
         with:
           path: './out'
 
