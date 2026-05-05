@@ -8,7 +8,6 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '/nomad-cafe'; // Default 
 
 const nextConfig = {
   output: isExport ? 'export' : 'standalone', // Use 'export' for static export on GitHub Pages
-  eslint: { ignoreDuringBuilds: true }, // Ignore ESLint errors during build
   typescript: { ignoreBuildErrors: true }, // Ignore TypeScript errors during build
   images: { unoptimized: true }, // Disable optimized images for static export
   ...(basePath ? { basePath, assetPrefix: basePath } : {}), // Base path and asset prefix for GitHub Pages URLs
