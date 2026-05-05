@@ -172,18 +172,3 @@ Distributed under the MIT License. See LICENSE for more information.
 · GitHub: @NikoPlus
 · Project Link: github.com/NikoPlus/nomad-cafe
 
----
-
-<div align="center">
-  <sub>Built with ☕ by the Nomad Cafe Team</sub>
-</div
-
-Changes made:
-
-· Removed "Live Demo" line entirely.
-· Removed "Built with v0.app" badge and "Deploy on Vercel" button.
-· Removed "Deployed on Vercel" badge from the tech stack table.
-· Updated title to remove "The TON-Powered Coffee Shop" (kept descriptive but neutral).
-· Kept Netlify deploy button as an alternative (no Vercel/v0 mention).
-
-You can now save this as README.md.
