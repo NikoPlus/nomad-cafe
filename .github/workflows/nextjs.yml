@@ -35,7 +35,7 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: /<repository-name> # Replace with your repo name (example: nomad-cafe)
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v4
         with:
           path: './out'
 
@@ -49,4 +49,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
