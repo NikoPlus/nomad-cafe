@@ -5,10 +5,10 @@ on:
     - cron: '0 9 * * 1'   # Every Monday at 9:00 UTC
   push:
     branches: [ main ]
-  workflow_dispatch:       # Allow manual trigger
+  workflow_dispatch:
 
 permissions:
-  issues: write            # Needed to create issues
+  issues: write
 
 jobs:
   audit:
@@ -37,8 +37,42 @@ jobs:
         continue-on-error: true
         run: |
           npx tsc --noEmit > tsc-output.txt 2>&1
-          # If tsc fails (exit code != 0), mark that we have an error
           if [ $? -ne 0 ]; then echo "has_error=true" >> $GITHUB_OUTPUT; else echo "has_error=false" >> $GITHUB_OUTPUT; fi
+
+      - name: Prepare issue body from bug template
+        id: prep_body
+        if: steps.npm_audit.outputs.has_issues != '0' || steps.tsc_check.outputs.has_error == 'true'
+        run: |
+          # Fetch the bug.yml template
+          TEMPLATE_URL="https://raw.githubusercontent.com/NikoPlus/nomad-cafe/main/.github/ISSUE_TEMPLATE/bug.yml"
+          curl -s $TEMPLATE_URL > bug_template.yml
+
+          # Extract the YAML front matter (name, description, body)
+          # For the issue body we need only the content after the front matter (the form fields)
+          # We'll use sed to remove the front matter (lines between ---)
+          sed -n '/^body:/,$ p' bug_template.yml > issue_body.md
+
+          # Append audit results to the issue body
+          echo -e "\n## 🧹 Automated Audit Report\n\n" >> issue_body.md
+
+          # Add npm audit results
+          if [ -f audit-results.json ]; then
+            vuln_count=$(jq '.vulnerabilities | length' audit-results.json)
+            if [ "$vuln_count" -gt 0 ]; then
+              echo -e "### 📦 npm Audit\nFound **$vuln_count** vulnerabilities.\n\n\`\`\`json\n$(jq '.vulnerabilities' audit-results.json)\n\`\`\`\n\n" >> issue_body.md
+            fi
+          fi
+
+          # Add TypeScript errors
+          if [ -f tsc-output.txt ] && [ -s tsc-output.txt ]; then
+            echo -e "### 🔷 TypeScript Errors\n\n\`\`\`\n$(cat tsc-output.txt)\n\`\`\`\n\n" >> issue_body.md
+          fi
+
+          echo -e "_Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by the audit workflow._" >> issue_body.md
+
+          # Optionally, you can set fields like version, os, etc.
+          # For example, add version as environment variable
+          echo "NOMAD_CAFE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Create or update audit issue
         if: steps.npm_audit.outputs.has_issues != '0' || steps.tsc_check.outputs.has_error == 'true'
@@ -46,52 +80,35 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            let body = '## 🧹 Automated Audit Report\n\n';
-            
-            // Add npm audit results
-            if (fs.existsSync('audit-results.json')) {
-              const audit = JSON.parse(fs.readFileSync('audit-results.json', 'utf8'));
-              const vulnCount = audit.vulnerabilities ? Object.keys(audit.vulnerabilities).length : 0;
-              if (vulnCount > 0) {
-                body += `### 📦 npm Audit\nFound **${vulnCount}** vulnerabilities.\n\`\`\`json\n${JSON.stringify(audit.vulnerabilities, null, 2)}\n\`\`\`\n\n`;
-              }
-            }
-            
-            // Add TypeScript errors
-            if (fs.existsSync('tsc-output.txt')) {
-              const tscErrors = fs.readFileSync('tsc-output.txt', 'utf8');
-              if (tscErrors.trim()) {
-                body += `### 🔷 TypeScript Errors\n\`\`\`\n${tscErrors.slice(0, 5000)}\n\`\`\`\n\n`;
-              }
-            }
-            
-            body += `_Generated on ${new Date().toUTCString()} by the audit workflow._`;
-            
-            // Try to find an existing open audit issue
+            let issueBody = fs.readFileSync('issue_body.md', 'utf8');
+
+            // Fetch existing audit issue (search by label and title)
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               labels: 'automated-audit'
             });
-            
-            const existing = issues.data.find(issue => issue.title === '🧹 Automated Audit Report');
-            
-            if (existing) {
+
+            const existingIssue = issues.data.find(issue => issue.title === '🧹 Automated Audit Report');
+
+            if (existingIssue) {
               // Update existing issue with new body
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: existing.number,
-                body: body
+                issue_number: existingIssue.number,
+                body: issueBody
               });
             } else {
-              // Create new issue
+              // Create new issue using the bug template effectively
+              // We'll add front matter-like fields as labels/assignees/etc.
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: '🧹 Automated Audit Report',
-                body: body,
-                labels: ['automated-audit', 'bug']
+                body: issueBody,
+                labels: ['automated-audit', 'bug'],
+                assignees: [context.repo.owner] // assign yourself or a team member
               });
             }
