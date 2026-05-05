@@ -1,55 +1,54 @@
 
-
-☕ Nomad Cafe: The TON-Powered Coffee Shop
+# ☕ Nomad Cafe: TON-Powered Coffee Ordering dApp
 
 ```
- _   _                       _____
-| \ | |                     /  __ \
+
+---
+
+| \ | |                     /  __ 
 |  \| | ___  _ __ ___  ___  | /  \/  ___  _ __ ___
-| . ` |/ _ \| '_ ` _ \/ __| | |     / _ \| '__/ _ \
-| |\  | (_) | | | | | \__ \ | \__/\| (_) | | |  __/
-\_| \_/\___/|_| |_| |_|___/  \____/ \___/|_|  \___|
+| .  |/ _ \| '_  _ \/ | | |     / _ \| '/ _ 
+| |\  | () | | | | | \__ \ | \_/\| () | | |  __/
+\_| \_/\___/|| || ||___/  \___/ \___/||  \___/
 
 ```
+**Nomad Cafe** isn't just another coffee shop experience—it's a complete **on-chain ordering dApp** built to help digital nomads find their perfect work-friendly cafe and pay with TON cryptocurrency.
 
-Nomad Cafe isn't just another coffee shop experience—it's a complete on-chain ordering dApp built to help digital nomads find their perfect work-friendly cafe and pay with TON cryptocurrency.
+## 🚀 Deploy Your Own
 
-Live Demo: vercel.com/alis-projects-babca186/v0-ton-cafe-app
+Deploy instantly on your preferred platform:
 
-🚀 Deploy Your Own
+[![Deploy on Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https%3A%2F%2Fgithub.com%2FNikoPlus%2Fnomad-cafe)
 
-Deploy instantly through these integrated platforms:
+## ✨ Features
 
-https://vercel.com/button https://www.netlify.com/img/deploy/button.svg https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge
+* 🗺️ **Smart Cafe Discovery**: Locate nearby work-friendly cafes ordered by real-time distance
+* 💎 **TON Blockchain Payments**: Seamless cryptocurrency payments via the TON network
+* 📱 **Responsive Design**: Flawless experience across all devices, built with Next.js
+* 🧩 **Modular Architecture**: Clean, scalable structure using modern React patterns
+* 🌐 **Multi-Language Support**: Global-ready platform with i18n integration
+* 📖 **Interactive API Docs**: Visit `/api-docs` for full OpenAPI/Swagger documentation
+* 🔔 **Augmented Notifications**: Real-time order and payment alerts via Sonner
+* 🧠 **Smart Wallet Connection**: Integrated with TON Connect for secure, instant crypto transactions
 
-✨ Features
+## 🛠️ Tech Stack
 
-· 🗺️ Smart Cafe Discovery: Locate nearby work-friendly cafes ordered by real-time distance
-· 💎 TON Blockchain Payments: Seamless cryptocurrency payments via the TON network
-· 📱 Responsive Design: Flawless experience across all devices, built with Next.js
-· 🧩 Modular Architecture: Clean, scalable structure using modern React patterns
-· 🌐 Multi-Language Support: Global-ready platform with i18n integration
-· 📖 Interactive API Docs: Visit /api-docs for full OpenAPI/Swagger documentation
-· 🔔 Augmented Notifications: Real-time order and payment alerts via Sonner
-· 🧠 Smart Wallet Connection: Integrated with TON Connect for secure, instant crypto transactions
+| Category                | Technologies                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Framework**           | [![Next.js](https://img.shields.io/badge/Next.js-14.2.33-black?style=flat-square&logo=next.js)](https://nextjs.org/) [![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)                                                                                                                                                                                                                                                                                                                                                   |
+| **Language**            | [![TypeScript](https://img.shields.io/badge/TypeScript-91.7%25-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Styling**             | [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1.9-06B6D4?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **UI Components**       | [![Radix UI](https://img.shields.io/badge/Radix_UI-Latest-512B81?style=flat-square&logo=radix-ui)](https://www.radix-ui.com/) [![Shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Latest-000000?style=flat-square)](https://ui.shadcn.com/)                                                                                                                                                                                                                                                                                                                                         |
+| **Payment Integration** | [![TON](https://img.shields.io/badge/TON_Connect-Latest-2F8BEE?style=flat-square&logo=TON)](https://ton.org/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Charts**              | [![Recharts](https://img.shields.io/badge/Recharts-2.15.4-22B5BF?style=flat-square&logo=recharts)](https://recharts.org/)                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Form Handling**       | [![React Hook Form](https://img.shields.io/badge/React_Hook_Form-7.60.0-EC5990?style=flat-square&logo=reacthookform)](https://react-hook-form.com/) [![Zod](https://img.shields.io/badge/Zod-3.25.76-3E6B9B?style=flat-square&logo=zod)](https://zod.dev/)                                                                                                                                                                                                                                                                                                                           |
+| **API Documentation**   | [![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3.0-85EA2D?style=flat-square&logo=swagger)](https://swagger.io/)                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Analytics**           | [![Vercel Analytics](https://img.shields.io/badge/Vercel_Analytics-Latest-000000?style=flat-square&logo=vercel)](https://vercel.com/analytics)                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Code Quality**        | [![ESLint](https://img.shields.io/badge/ESLint-8.57.0-4B32C3?style=flat-square&logo=eslint)](https://eslint.org/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **License**             | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Repository Stats**    | [![Stars](https://img.shields.io/github/stars/NikoPlus/nomad-cafe?style=flat-square&logo=github)](https://github.com/NikoPlus/nomad-cafe/stargazers) [![Forks](https://img.shields.io/github/forks/NikoPlus/nomad-cafe?style=flat-square&logo=github)](https://github.com/NikoPlus/nomad-cafe/network/members) [![GitHub commit activity](https://img.shields.io/github/commit-activity/w/NikoPlus/nomad-cafe?style=flat-square)](https://github.com/NikoPlus/nomad-cafe/commits) [![Top Language](https://img.shields.io/github/languages/top/NikoPlus/nomad-cafe?style=flat-square)](https://github.com/NikoPlus/nomad-cafe) |
 
-🛠️ Tech Stack
-
-Category Technologies
-Framework https://img.shields.io/badge/Next.js-14.2.33-black?style=flat-square&logo=next.js https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat-square&logo=react
-Language https://img.shields.io/badge/TypeScript-91.7%25-3178C6?style=flat-square&logo=typescript
-Styling https://img.shields.io/badge/Tailwind_CSS-4.1.9-06B6D4?style=flat-square&logo=tailwind-css
-UI Components https://img.shields.io/badge/Radix_UI-Latest-512B81?style=flat-square&logo=radix-ui https://img.shields.io/badge/shadcn%2Fui-Latest-000000?style=flat-square
-Payment Integration https://img.shields.io/badge/TON_Connect-Latest-2F8BEE?style=flat-square&logo=TON
-Charts https://img.shields.io/badge/Recharts-2.15.4-22B5BF?style=flat-square&logo=recharts
-Form Handling https://img.shields.io/badge/React_Hook_Form-7.60.0-EC5990?style=flat-square&logo=reacthookform https://img.shields.io/badge/Zod-3.25.76-3E6B9B?style=flat-square&logo=zod
-API Documentation https://img.shields.io/badge/Swagger-OpenAPI_3.0-85EA2D?style=flat-square&logo=swagger
-Analytics https://img.shields.io/badge/Vercel_Analytics-Latest-000000?style=flat-square&logo=vercel
-Code Quality https://img.shields.io/badge/ESLint-8.57.0-4B32C3?style=flat-square&logo=eslint
-License https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square
-Repository Stats https://img.shields.io/github/stars/NikoPlus/nomad-cafe?style=flat-square&logo=github https://img.shields.io/github/forks/NikoPlus/nomad-cafe?style=flat-square&logo=github https://img.shields.io/github/commit-activity/w/NikoPlus/nomad-cafe?style=flat-square https://img.shields.io/github/languages/top/NikoPlus/nomad-cafe?style=flat-square https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel
-
-📁 Project Structure
+## 📁 Project Structure
 
 ```bash
 .
@@ -172,3 +171,19 @@ Distributed under the MIT License. See LICENSE for more information.
 
 · GitHub: @NikoPlus
 · Project Link: github.com/NikoPlus/nomad-cafe
+
+---
+
+<div align="center">
+  <sub>Built with ☕ by the Nomad Cafe Team</sub>
+</div
+
+Changes made:
+
+· Removed "Live Demo" line entirely.
+· Removed "Built with v0.app" badge and "Deploy on Vercel" button.
+· Removed "Deployed on Vercel" badge from the tech stack table.
+· Updated title to remove "The TON-Powered Coffee Shop" (kept descriptive but neutral).
+· Kept Netlify deploy button as an alternative (no Vercel/v0 mention).
+
+You can now save this as README.md.
