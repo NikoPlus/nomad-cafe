@@ -2,7 +2,7 @@ name: Deploy Next.js site to Pages
 
 on:
   push:
-    branches: ["main"] # Triggers deployment on the `main` branch
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -26,14 +26,19 @@ jobs:
         with:
           node-version: 20
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9  # or latest stable, e.g., 9 or 10
+
       - name: Install dependencies
-        run: npm i --force
+        run: pnpm install --frozen-lockfile  # use --force only if necessary
 
       - name: Set environment variables
         run: echo "NEXT_PUBLIC_BASE_PATH=/nomad-cafe" >> $GITHUB_ENV
 
       - name: Build static export
-        run: npm run build
+        run: pnpm run build
         env:
           NEXT_EXPORT: "true"
 
