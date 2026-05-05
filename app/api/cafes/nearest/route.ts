@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 
+// Force static generation for this route (required for static export)
+export const dynamic = "force-static"
+export const revalidate = 3600 // Revalidate every hour
+
 // Simple haversine distance
 function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371000
