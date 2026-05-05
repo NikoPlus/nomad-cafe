@@ -3,7 +3,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 /** @type {import('next').NextConfig} */
-const isExport = process.env.NEXT_EXPORT === 'true';
+// const isExport = process.env.NEXT_EXPORT === 'true';
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '/nomad-cafe'; // Default to '/nomad-cafe' for GitHub Pages
 
 const nextConfig = {
