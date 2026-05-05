@@ -2,7 +2,7 @@ name: Deploy Next.js site to Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main"] # Triggers deployment on the `main` branch
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Setup Node.js
@@ -27,15 +27,13 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
+
+      - name: Set environment variables
+        run: echo "NEXT_PUBLIC_BASE_PATH=/nomad-cafe" >> $GITHUB_ENV
 
       - name: Build static export
-        run: npm run export
-        env:
-          NEXT_PUBLIC_BASE_PATH: /nomad-cafe # Replace with your repo name (example: nomad-cafe)
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        run: npm run
         with:
           path: './out'
 
@@ -49,4 +47,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v6
