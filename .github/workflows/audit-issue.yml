@@ -2,7 +2,7 @@ name: Audit & Auto-Issue
 
 on:
   schedule:
-    - cron: '0 9 * * 1'   # Every Monday at 9:00 UTC
+    - cron: '0 9 * * 1'
   push:
     branches: [ main ]
   workflow_dispatch:
@@ -32,22 +32,23 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      ## FIXED: Better capture of npm audit results
       - name: Run npm audit
         id: npm_audit
         continue-on-error: true
         run: |
-          set -e
-          npm audit --json | tee audit-results.json
-          echo "has_issues=$(jq '.vulnerabilities | length' audit-results.json)" >> $GITHUB_OUTPUT
-          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+          npm audit --json > audit-results.json || true
+          echo "has_issues=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo '0')" >> $GITHUB_OUTPUT
 
       - name: Run TypeScript check
         id: tsc_check
         continue-on-error: true
         run: |
-          npx tsc --noEmit > tsc-output.txt 2>&1
-          if [ $? -ne 0 ]; then echo "has_error=true" >> $GITHUB_OUTPUT; else echo "has_error=false" >> $GITHUB_OUTPUT; fi
+          npx tsc --noEmit > tsc-output.txt 2>&1 || true
+          if grep -q "error" tsc-output.txt; then
+            echo "has_error=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_error=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Get username
         id: get_user
@@ -59,87 +60,66 @@ jobs:
           fi
           echo "username=$USERNAME" >> $GITHUB_OUTPUT
 
-      ## FIXED: Properly formatted markdown and YAML
-      - name: Prepare issue body
-        id: prep_body
-        if: always()
-        run: |
-          VULN_COUNT=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo "0")
-          TSC_ERRORS=$(cat tsc-output.txt 2>/dev/null | wc -l)
-
-          if [ "$VULN_COUNT" -gt 0 ] || [ "$TSC_ERRORS" -gt 0 ]; then
-            ISSUE_TITLE="🚨 Audit Report: Issues Found"
-            cat > issue_body.md << 'EOF'
-            # 🚨 Automated Audit Report
-
-            EOF
-            echo "**Mention:** @${{ steps.get_user.outputs.username }}" >> issue_body.md
-            echo "" >> issue_body.md
-            echo "## Issues found" >> issue_body.md
-            echo "" >> issue_body.md
-            if [ "$VULN_COUNT" -gt 0 ]; then
-              echo "### 📦 npm Audit" >> issue_body.md
-              echo "" >> issue_body.md
-              echo "Found **$VULN_COUNT** vulnerability(ies)." >> issue_body.md
-              echo "" >> issue_body.md
-              echo '```json' >> issue_body.md
-              jq '.vulnerabilities' audit-results.json >> issue_body.md
-              echo '```' >> issue_body.md
-              echo "" >> issue_body.md
-            fi
-            if [ "$TSC_ERRORS" -gt 0 ]; then
-              echo "### 🔷 TypeScript Errors" >> issue_body.md
-              echo "" >> issue_body.md
-              echo '```' >> issue_body.md
-              cat tsc-output.txt >> issue_body.md
-              echo '```' >> issue_body.md
-              echo "" >> issue_body.md
-            fi
-          else
-            ISSUE_TITLE="✅ Audit Report: All Checks Passed"
-            cat > issue_body.md << 'EOF'
-            # ✅ Automated Audit Report
-
-            EOF
-            echo "**Mention:** @${{ steps.get_user.outputs.username }}" >> issue_body.md
-            echo "" >> issue_body.md
-            echo "**Status:** All audits passed successfully." >> issue_body.md
-            echo "" >> issue_body.md
-            echo "- **npm audit:** No vulnerabilities" >> issue_body.md
-            echo "- **TypeScript check:** No type errors" >> issue_body.md
-            echo "" >> issue_body.md
-          fi
-          echo "_Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ")_" >> issue_body.md
-
-          echo "ISSUE_TITLE=$ISSUE_TITLE" >> $GITHUB_ENV
-          if [ "$VULN_COUNT" -gt 0 ] || [ "$TSC_ERRORS" -gt 0 ]; then
-            echo "HAS_PROBLEMS=true" >> $GITHUB_ENV
-          else
-            echo "HAS_PROBLEMS=false" >> $GITHUB_ENV
-          fi
-
-      ## FIXED: Properly formatted YAML for the creation step
-      - name: Create issue with PAT
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-        run: |
-          if [ -f issue_body.md ]; then
-            BODY=$(cat issue_body.md)
-          else
-            BODY="Audit completed."
-          fi
-
-          if gh issue list --label "automated-audit" --state open | grep -q "Automated Audit"; then
-            ISSUE_NUMBER=$(gh issue list --label "automated-audit" --state open --json number --jq '.[0].number')
-            gh issue edit $ISSUE_NUMBER \
-              --title "$ISSUE_TITLE" \
-              --body "$BODY" \
-              --add-label "automated-audit,$([ "$HAS_PROBLEMS" = "true" ] && echo "bug" || echo "")"
-          else
-            gh issue create \
-              --title "$ISSUE_TITLE" \
-              --body "$BODY" \
-              --label "automated-audit,$([ "$HAS_PROBLEMS" = "true" ] && echo "bug" || echo "")" \
-              --assignee "${{ steps.get_user.outputs.username }}"
-          fi
+      - name: Create or update audit issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const hasVulns = parseInt('${{ steps.npm_audit.outputs.has_issues }}') > 0;
+            const hasTscErrors = '${{ steps.tsc_check.outputs.has_error }}' === 'true';
+            const hasProblems = hasVulns || hasTscErrors;
+            
+            let issueTitle = hasProblems ? '🚨 Audit Report: Issues Found' : '✅ Audit Report: All Checks Passed';
+            let issueBody = hasProblems ? '# 🚨 Automated Audit Report\n\n' : '# ✅ Automated Audit Report\n\n';
+            issueBody += `**Mention:** @${{ steps.get_user.outputs.username }}\n\n`;
+            
+            if (hasProblems) {
+              issueBody += '## Issues found\n\n';
+              if (hasVulns) {
+                const auditData = JSON.parse(fs.readFileSync('audit-results.json', 'utf8'));
+                const vulnCount = Object.keys(auditData.vulnerabilities || {}).length;
+                issueBody += `### 📦 npm Audit\n\nFound **${vulnCount}** vulnerability(ies).\n\n\`\`\`json\n${JSON.stringify(auditData.vulnerabilities, null, 2)}\n\`\`\`\n\n`;
+              }
+              if (hasTscErrors) {
+                const tscErrors = fs.readFileSync('tsc-output.txt', 'utf8');
+                issueBody += `### 🔷 TypeScript Errors\n\n\`\`\`\n${tscErrors}\n\`\`\`\n\n`;
+              }
+            } else {
+              issueBody += '**Status:** All audits passed successfully.\n\n- **npm audit:** No vulnerabilities\n- **TypeScript check:** No type errors\n\n';
+            }
+            
+            issueBody += `_Generated on ${new Date().toISOString()}_`;
+            
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'automated-audit'
+            });
+            
+            const existingIssue = existingIssues.data.find(issue => 
+              issue.title === '✅ Audit Report: All Checks Passed' || 
+              issue.title === '🚨 Audit Report: Issues Found'
+            );
+            
+            const labels = ['automated-audit'];
+            if (hasProblems) labels.push('bug');
+            
+            if (existingIssue) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                title: issueTitle,
+                body: issueBody,
+                labels: labels
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: labels
+              });
+            }
