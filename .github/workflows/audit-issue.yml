@@ -45,55 +45,41 @@ jobs:
 
       - name: Prepare issue body (always runs)
         id: prep_body
-        if: always()   # Force step to run even if checks had no issues
+        if: always()
         run: |
-          # Default: no problems found
-          ISSUE_TITLE="✅ Audit Report: All Checks Passed"
-          ISSUE_BODY="## 🧹 Automated Audit Report\n\n"
-          ISSUE_BODY+="**Status:** All audits passed successfully ✅\n\n"
-          ISSUE_BODY+="- **npm audit:** No vulnerabilities found\n"
-          ISSUE_BODY+="- **TypeScript check:** No type errors\n\n"
-          ISSUE_BODY+="_Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by the audit workflow._"
-
-          # Check if there are any problems
-          HAS_PROBLEMS=false
           VULN_COUNT=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo "0")
           TSC_ERRORS=$(cat tsc-output.txt 2>/dev/null | wc -l)
 
           if [ "$VULN_COUNT" -gt 0 ] || [ "$TSC_ERRORS" -gt 0 ]; then
-            HAS_PROBLEMS=true
             ISSUE_TITLE="🚨 Audit Report: Issues Found"
-
-            # Fetch the bug.yml template
-            TEMPLATE_URL="https://raw.githubusercontent.com/NikoPlus/nomad-cafe/main/.github/ISSUE_TEMPLATE/bug.yml"
-            curl -s $TEMPLATE_URL > bug_template.yml 2>/dev/null
-
-            # Extract the body part of the template as base
-            if [ -f bug_template.yml ]; then
-              ISSUE_BODY=$(sed -n '/^body:/,$ p' bug_template.yml)
-            else
-              ISSUE_BODY="## 🐛 Bug Report\n\n"
-            fi
-
-            # Append audit details
-            ISSUE_BODY+="\n\n## 🧹 Automated Audit Report\n\n"
+            ISSUE_BODY="# 🚨 Automated Audit Report\n\n"
+            ISSUE_BODY+="## Issues found\n\n"
 
             if [ "$VULN_COUNT" -gt 0 ]; then
-              ISSUE_BODY+="### 📦 npm Audit\nFound **$VULN_COUNT** vulnerabilities.\n\n"
+              ISSUE_BODY+="### 📦 npm Audit\n\nFound **$VULN_COUNT** vulnerability(ies).\n\n"
               ISSUE_BODY+="\`\`\`json\n$(jq '.vulnerabilities' audit-results.json)\n\`\`\`\n\n"
             fi
 
             if [ "$TSC_ERRORS" -gt 0 ]; then
               ISSUE_BODY+="### 🔷 TypeScript Errors\n\n\`\`\`\n$(cat tsc-output.txt)\n\`\`\`\n\n"
             fi
-
-            ISSUE_BODY+="_Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ") by the audit workflow._"
+          else
+            ISSUE_TITLE="✅ Audit Report: All Checks Passed"
+            ISSUE_BODY="# ✅ Automated Audit Report\n\n"
+            ISSUE_BODY+="**Status:** All audits passed successfully.\n\n"
+            ISSUE_BODY+="- **npm audit:** No vulnerabilities\n"
+            ISSUE_BODY+="- **TypeScript check:** No type errors\n\n"
           fi
 
-          # Write the final issue body to a file
+          ISSUE_BODY+="_Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ")_"
+
           echo "$ISSUE_BODY" > issue_body.md
           echo "ISSUE_TITLE=$ISSUE_TITLE" >> $GITHUB_ENV
-          echo "HAS_PROBLEMS=$HAS_PROBLEMS" >> $GITHUB_ENV
+          if [ "$VULN_COUNT" -gt 0 ] || [ "$TSC_ERRORS" -gt 0 ]; then
+            echo "HAS_PROBLEMS=true" >> $GITHUB_ENV
+          else
+            echo "HAS_PROBLEMS=false" >> $GITHUB_ENV
+          fi
 
       - name: Create or update audit issue (always runs)
         if: always()
@@ -105,7 +91,7 @@ jobs:
             const issueTitle = process.env.ISSUE_TITLE;
             const hasProblems = process.env.HAS_PROBLEMS === 'true';
 
-            // Search for existing audit issue (by label)
+            // Search for existing audit issue
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -118,27 +104,25 @@ jobs:
               issue.title === '🚨 Audit Report: Issues Found'
             );
 
+            const labels = ['automated-audit'];
+            if (hasProblems) labels.push('bug');
+
             if (existingIssue) {
-              // Update existing issue with new body (and possibly new title)
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existingIssue.number,
                 title: issueTitle,
-                body: issueBody
+                body: issueBody,
+                labels: labels
               });
             } else {
-              // Create new issue
-              const labels = ['automated-audit'];
-              if (hasProblems) labels.push('bug');
-              else labels.push('maintenance');
-
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: issueTitle,
                 body: issueBody,
-                labels: labels,
-                assignees: [context.repo.owner]
+                labels: labels
+                // assignees removed – it was causing the error
               });
             }
