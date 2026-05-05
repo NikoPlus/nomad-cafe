@@ -1,0 +1,38 @@
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'app/**'
+      - 'components/**'
+      - 'public/**'
+      - 'styles/**'
+      - '*.config.mjs'
+      - '*.config.js'
+
+backend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'lib/**'
+      - 'server/**'
+      - 'api/**'
+      - '*.go'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**'
+      - '*.md'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+
+infrastructure:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+      - 'docker-compose*.yml'
+      - 'Dockerfile*'
+      - '.env*'
