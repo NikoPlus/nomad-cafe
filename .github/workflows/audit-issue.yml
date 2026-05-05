@@ -5,7 +5,7 @@ on:
     - cron: '0 9 * * 1'   # Every Monday at 9:00 UTC
   push:
     branches: [ main ]
-  workflow_dispatch:       # Allow manual trigger
+  workflow_dispatch:
 
 permissions:
   issues: write
@@ -32,41 +32,38 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      ## FIXED: Better capture of npm audit results
       - name: Run npm audit
         id: npm_audit
         continue-on-error: true
         run: |
-          # --- Fixed indent start ---
-          npm audit --json > audit-results.json
+          set -e
+          npm audit --json | tee audit-results.json
           echo "has_issues=$(jq '.vulnerabilities | length' audit-results.json)" >> $GITHUB_OUTPUT
-          # --- Fixed indent end ---
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
 
       - name: Run TypeScript check
         id: tsc_check
         continue-on-error: true
         run: |
-          # --- Fixed indent start ---
           npx tsc --noEmit > tsc-output.txt 2>&1
           if [ $? -ne 0 ]; then echo "has_error=true" >> $GITHUB_OUTPUT; else echo "has_error=false" >> $GITHUB_OUTPUT; fi
-          # --- Fixed indent end ---
 
       - name: Get username
         id: get_user
         run: |
-          # --- Fixed indent start ---
           if [[ "${{ github.event_name }}" == "push" ]]; then
             USERNAME="${{ github.event.pusher.name }}"
           else
             USERNAME="${{ github.repository_owner }}"
           fi
           echo "username=$USERNAME" >> $GITHUB_OUTPUT
-          # --- Fixed indent end ---
 
+      ## FIXED: Properly formatted markdown and YAML
       - name: Prepare issue body
         id: prep_body
         if: always()
         run: |
-          # --- Fixed indent start ---
           VULN_COUNT=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo "0")
           TSC_ERRORS=$(cat tsc-output.txt 2>/dev/null | wc -l)
 
@@ -120,34 +117,29 @@ jobs:
           else
             echo "HAS_PROBLEMS=false" >> $GITHUB_ENV
           fi
-          # --- Fixed indent end ---
 
+      ## FIXED: Properly formatted YAML for the creation step
       - name: Create issue with PAT
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}  # 👈 This is the secret you need to create
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          # --- Fixed indent start ---
           if [ -f issue_body.md ]; then
             BODY=$(cat issue_body.md)
           else
             BODY="Audit completed."
           fi
 
-          # Check if an issue already exists
           if gh issue list --label "automated-audit" --state open | grep -q "Automated Audit"; then
-            # Update existing issue
             ISSUE_NUMBER=$(gh issue list --label "automated-audit" --state open --json number --jq '.[0].number')
             gh issue edit $ISSUE_NUMBER \
               --title "$ISSUE_TITLE" \
               --body "$BODY" \
               --add-label "automated-audit,$([ "$HAS_PROBLEMS" = "true" ] && echo "bug" || echo "")"
           else
-            # Create new issue with assignee
             gh issue create \
               --title "$ISSUE_TITLE" \
               --body "$BODY" \
               --label "automated-audit,$([ "$HAS_PROBLEMS" = "true" ] && echo "bug" || echo "")" \
               --assignee "${{ steps.get_user.outputs.username }}"
           fi
-          # --- Fixed indent end ---
