@@ -8,7 +8,8 @@
     "lint": "next lint --quiet",
     "start": "next start",
     "audit": "npm audit --json || true",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "export": "next build && next export
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
