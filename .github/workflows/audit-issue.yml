@@ -2,7 +2,7 @@ name: Audit & Auto-Issue
 
 on:
   schedule:
-    - cron: '0 9 * * 1'
+    - cron: '0 9 * * 1'   # Every Monday at 9:00 UTC
   push:
     branches: [ main ]
   workflow_dispatch:
@@ -50,6 +50,17 @@ jobs:
             echo "has_error=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Run Next.js build (static export test)
+        id: next_build
+        continue-on-error: true
+        run: |
+          NEXT_EXPORT=true npm run build > build-output.txt 2>&1 || true
+          if grep -qi "error\|failed" build-output.txt; then
+            echo "build_failed=true" >> $GITHUB_OUTPUT
+          else
+            echo "build_failed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Get username
         id: get_user
         run: |
@@ -67,7 +78,8 @@ jobs:
             const fs = require('fs');
             const hasVulns = parseInt('${{ steps.npm_audit.outputs.has_issues }}') > 0;
             const hasTscErrors = '${{ steps.tsc_check.outputs.has_error }}' === 'true';
-            const hasProblems = hasVulns || hasTscErrors;
+            const hasBuildFailure = '${{ steps.next_build.outputs.build_failed }}' === 'true';
+            const hasProblems = hasVulns || hasTscErrors || hasBuildFailure;
             
             let issueTitle = hasProblems ? '🚨 Audit Report: Issues Found' : '✅ Audit Report: All Checks Passed';
             let issueBody = hasProblems ? '# 🚨 Automated Audit Report\n\n' : '# ✅ Automated Audit Report\n\n';
@@ -75,17 +87,28 @@ jobs:
             
             if (hasProblems) {
               issueBody += '## Issues found\n\n';
+              
               if (hasVulns) {
                 const auditData = JSON.parse(fs.readFileSync('audit-results.json', 'utf8'));
                 const vulnCount = Object.keys(auditData.vulnerabilities || {}).length;
                 issueBody += `### 📦 npm Audit\n\nFound **${vulnCount}** vulnerability(ies).\n\n\`\`\`json\n${JSON.stringify(auditData.vulnerabilities, null, 2)}\n\`\`\`\n\n`;
               }
+              
               if (hasTscErrors) {
                 const tscErrors = fs.readFileSync('tsc-output.txt', 'utf8');
                 issueBody += `### 🔷 TypeScript Errors\n\n\`\`\`\n${tscErrors}\n\`\`\`\n\n`;
               }
+              
+              if (hasBuildFailure) {
+                const buildOutput = fs.readFileSync('build-output.txt', 'utf8');
+                issueBody += `### ⚠️ Next.js Build Failure\n\n\`\`\`\n${buildOutput.slice(0, 5000)}\n\`\`\`\n\n`;
+                issueBody += '**Note:** This typically indicates a missing `generateStaticParams()` or other export-time error.\n\n';
+              }
             } else {
-              issueBody += '**Status:** All audits passed successfully.\n\n- **npm audit:** No vulnerabilities\n- **TypeScript check:** No type errors\n\n';
+              issueBody += '**Status:** All audits passed successfully.\n\n';
+              issueBody += '- **npm audit:** No vulnerabilities\n';
+              issueBody += '- **TypeScript check:** No type errors\n';
+              issueBody += '- **Next.js build:** Succeeded\n\n';
             }
             
             issueBody += `_Generated on ${new Date().toISOString()}_`;
@@ -115,6 +138,10 @@ jobs:
                 labels: labels
               });
             } else {
+              // Create new issue – assignee only works with PAT
+              // The default GITHUB_TOKEN cannot assign. Use PAT_TOKEN if you have it.
+              // If you want assignment, set GH_TOKEN secret and use gh CLI. 
+              // Here we use github-script without assignees to avoid permission errors.
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
