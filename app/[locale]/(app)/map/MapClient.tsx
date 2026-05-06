@@ -10,7 +10,7 @@ export default function MapClient() {
   useEffect(() => {
     setIsBrowser(true);
     // Dynamically import your map component and set to state
-    import("@/components/Map").then((mod) => setMapComponent(() => mod.default));
+    import("@/app/[locale]/(app)/map/page").then((mod) => setMapComponent(() => mod.default));
   }, []);
 
   if (!isBrowser || !MapComponent) {
