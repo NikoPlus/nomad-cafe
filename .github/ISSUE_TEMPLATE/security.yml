@@ -1,0 +1,8 @@
+name: 🔒 Security
+description: Report a security vulnerability
+title: "[SECURITY]: "
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: "⚠️ If this is a critical vulnerability, please use **GitHub Private Security Advisory** instead."
