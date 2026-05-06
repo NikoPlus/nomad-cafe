@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { Coffee, MapPin, ReceiptText, Settings } from "lucide-react"
-import Link from "next/link"
-import { useTranslations } from 'next-intl'
+import { Coffee, MapPin, ReceiptText, Settings } from "lucide-react";
+import Link from "next/link";
+import { useTranslations } from 'next-intl';
 
 import {
   Sidebar,
@@ -15,17 +15,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const items = [
   { key: "menu", href: "/", icon: Coffee },
   { key: "map", href: "/map", icon: MapPin },
   { key: "myOrders", href: "/orders/12345", icon: ReceiptText },
   { key: "settings", href: "#", icon: Settings },
-]
+];
 
 export function AppSidebar() {
-  const t = useTranslations('navigation')
+  const tApp = useTranslations('app');           // ✅ for app title & subtitle
+  const tNav = useTranslations('navigation');    // ✅ for navigation items
 
   return (
     <Sidebar collapsible="icon">
@@ -35,14 +36,14 @@ export function AppSidebar() {
             <Coffee className="h-5 w-5" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <div className="text-base font-bold">{t('../app.title')}</div>
-            <div className="text-xs text-muted-foreground">{t('../app.subtitle')}</div>
+            <div className="text-base font-bold">{tApp('title')}</div>
+            <div className="text-xs text-muted-foreground">{tApp('subtitle')}</div>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('navigation')}</SidebarGroupLabel>
+          <SidebarGroupLabel>{tNav('navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -50,7 +51,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <Link href={item.href}>
                       <item.icon />
-                      <span>{t(item.key)}</span>
+                      <span>{tNav(item.key)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -63,4 +64,3 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
-

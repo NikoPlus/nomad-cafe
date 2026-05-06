@@ -21,9 +21,12 @@
   "categories": {
     "Coffee": "Coffee",
     "Tea": "Tea",
-    "Bakery": "Bakery"
+    "Bakery": "Bakery",
+    "Hot Drinks": "Hot Drinks",
+    "Cold Drinks": "Cold Drinks",
+    "Shakes": "Shakes"
   },
-  "items": {
+   "items": {
     "latte": {
       "title": "Caffè Latte",
       "description": "Rich espresso with steamed milk"
@@ -42,11 +45,91 @@
     },
     "espresso": {
       "title": "Espresso",
-      "description": "Pure, strong Italian coffee"
+      "description": "Strong concentrated coffee shot"
     },
     "chai": {
       "title": "Chai Latte",
       "description": "Spiced tea with steamed milk"
+    },
+    "cappuccino": {
+      "title": "Cappuccino",
+      "description": "Espresso with steamed milk and foam"
+    },
+    "mocha": {
+      "title": "Mocha",
+      "description": "Espresso mixed with chocolate and milk"
+    },
+    "caramel-macchiato": {
+      "title": "Caramel Macchiato",
+      "description": "Espresso, steamed milk, and caramel"
+    },
+    "hot-chocolate": {
+      "title": "Hot Chocolate",
+      "description": "Creamy hot cocoa drink"
+    },
+    "masala-tea": {
+      "title": "Masala Tea",
+      "description": "Spiced Indian-style milk tea"
+    },
+    "black-tea": {
+      "title": "Black Tea",
+      "description": "Classic brewed black tea"
+    },
+    "hot-fruit": {
+      "title": "Hot Fruit Drink",
+      "description": "Hot fruit infusion with ginger or cinnamon"
+    },
+    "dam-tea": {
+      "title": "Dami Black Tea",
+      "description": "Traditional brewed black tea"
+    },
+    "lemonade": {
+      "title": "Lemonade",
+      "description": "Refreshing lemonade, simple or ginger"
+    },
+    "ruby-rush": {
+      "title": "Ruby Rush",
+      "description": "Fruity red refreshing drink"
+    },
+    "pina-colada": {
+      "title": "Pina Colada",
+      "description": "Pineapple and coconut blend"
+    },
+    "cocospin": {
+      "title": "Cocospin",
+      "description": "Coconut-based creamy drink"
+    },
+    "ice-tea-vanilla": {
+      "title": "Iced Tea (Vanilla)",
+      "description": "Cold tea flavored with vanilla"
+    },
+    "ice-tea-peach": {
+      "title": "Iced Tea (Peach)",
+      "description": "Refreshing peach-flavored iced tea"
+    },
+    "ice-tea-pomegranate": {
+      "title": "Iced Tea (Pomegranate)",
+      "description": "Cold tea with pomegranate flavor"
+    },
+    "coconut-choco-frappe": {
+      "title": "Coconut Chocolate Frappe",
+      "description": "Blended chocolate frappe with coconut"
+    },
+    "frappuccino": {
+      "title": "Frappuccino",
+      "description": "Iced blended coffee drink"
+    },
+    "shake-vanilla": {
+      "title": "Vanilla Shake",
+      "description": "Creamy vanilla milkshake"
+    },
+    "shake-peanut": {
+      "title": "Peanut Shake",
+      "description": "Rich peanut-flavored milkshake"
+    },
+    "shake-caramel": {
+      "title": "Caramel Shake",
+      "description": "Creamy caramel milkshake"
     }
   },
   "ingredients": {

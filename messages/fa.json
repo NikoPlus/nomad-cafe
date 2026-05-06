@@ -22,7 +22,10 @@
   "categories": {
     "Coffee": "قهوه",
     "Tea": "چای",
-    "Bakery": "نانوایی"
+    "Bakery": "نانوایی",
+    "Hot Drinks": "نوشیدنی‌های گرم",
+    "Cold Drinks": "نوشیدنی‌های سرد",
+    "Shakes": "شیک"
   },
   "items": {
     "latte": {
@@ -34,8 +37,6 @@
       "description": "اسپرسو نرم رقیق شده با آب داغ"
     },
     "croissant": {
-      "title": "کروسان کره‌ای",
-      "description": "شیرینی ورقی و کره‌ای",
       "title": "کروسان کرهای",
       "description": "شیرینی ورقی و کرهای"
     },
@@ -45,11 +46,91 @@
     },
     "espresso": {
       "title": "اسپرسو",
-      "description": "قهوه خالص و قوی ایتالیایی"
+      "description": "اسپرسو قوی و غلیظ"
     },
     "chai": {
       "title": "چای لاته",
       "description": "چای ادویه‌دار با شیر بخار شده"
+    },
+    "cappuccino": {
+      "title": "کاپوچینو",
+      "description": "اسپرسو با شیر بخار داده شده و کف شیر"
+    },
+    "mocha": {
+      "title": "موکا",
+      "description": "اسپرسو با شکلات و شیر"
+    },
+    "caramel-macchiato": {
+      "title": "کارامل ماکیاتو",
+      "description": "اسپرسو، شیر بخار داده شده و کارامل"
+    },
+    "hot-chocolate": {
+      "title": "شکلات داغ",
+      "description": "نوشیدنی کاکائویی خامه‌ای"
+    },
+    "masala-tea": {
+      "title": "چای ماسالا",
+      "description": "چای شیر هندی با ادویه"
+    },
+    "black-tea": {
+      "title": "چای سیاه",
+      "description": "چای سیاه دم کرده کلاسیک"
+    },
+    "hot-fruit": {
+      "title": "نوشیدنی میوه داغ",
+      "description": "دم کرده میوه داغ با زنجبیل یا دارچین"
+    },
+    "dam-tea": {
+      "title": "چای دَم",
+      "description": "چای سیاه دم کرده سنتی"
+    },
+    "lemonade": {
+      "title": "لیموناد",
+      "description": "لیموناد با طراوت، ساده یا زنجبیلی"
+    },
+    "ruby-rush": {
+      "title": "روبی راش",
+      "description": "نوشیدنی قرمز میوه‌ای و با طراوت"
+    },
+    "pina-colada": {
+      "title": "پینا کولادا",
+      "description": "ترکیب آناناس و نارگیل"
+    },
+    "cocospin": {
+      "title": "کوکوسپین",
+      "description": "نوشیدنی خامه‌ای بر پایه نارگیل"
+    },
+    "ice-tea-vanilla": {
+      "title": "چای یخ (وانیل)",
+      "description": "چای سرد با طعم وانیل"
+    },
+    "ice-tea-peach": {
+      "title": "چای یخ (هلو)",
+      "description": "چای یخ با طعم هلو"
+    },
+    "ice-tea-pomegranate": {
+      "title": "چای یخ (انار)",
+      "description": "چای سرد با طعم انار"
+    },
+    "coconut-choco-frappe": {
+      "title": "فراپه شکلات نارگیل",
+      "description": "فراپه شکلاتی مخلوط با نارگیل"
+    },
+    "frappuccino": {
+      "title": "فراپوچینو",
+      "description": "نوشیدنی قهوه یخی مخلوط"
+    },
+    "shake-vanilla": {
+      "title": "شیک وانیلی",
+      "description": "شیک وانیلی خامه‌ای"
+    },
+    "shake-peanut": {
+      "title": "شیک بادام زمینی",
+      "description": "شیک بادام زمینی غلیظ"
+    },
+    "shake-caramel": {
+      "title": "شیک کارامل",
+      "description": "شیک کارامل خامه‌ای"
     }
   },
   "ingredients": {
