@@ -1,9 +1,15 @@
-name: Audit & Create Issue Chain
+name: Audit Security & Create Issue Chain
 
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
-  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * 1'  # Run every Monday at 9 AM UTC
+  code_scanning_alert:
+    types: [created]    # Trigger when a new code scanning alert is found
+  dependabot_alert:
+    types: [created]    # Trigger when a new Dependabot alert is found
+  workflow_dispatch:     # Allow manual run
 
 permissions:
   contents: read
@@ -11,7 +17,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -19,16 +25,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -36,15 +42,33 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # --- Code Scanning Logic ---
+      - name: Fetch CodeQL Alerts via API
+        id: fetch-codeql
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "Fetching code scanning alerts via API"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/code-scanning/alerts?state=open > codeql-alerts.json || true
+          ALERT_COUNT=$(jq 'length' codeql-alerts.json 2>/dev/null || echo "0")
+          echo "alert_count=$ALERT_COUNT" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run npm audit
         id: npm_audit
+        if: always()
         continue-on-error: true
         run: |
           npm audit --json > audit-results.json || true
           echo "has_issues=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo '0')" >> $GITHUB_OUTPUT
 
-      - name: Run Next.js build (static export test)
+      - name: Next.js Build test
         id: next_build
+        if: always()
         continue-on-error: true
         run: |
           NEXT_EXPORT=true pnpm run build > build-output.txt 2>&1 || true
@@ -54,55 +78,67 @@ jobs:
             echo "build_failed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create/Update Parent Issue and Sub‑issues
-        uses: actions/github-script@v9
+      # --- Master Issue Management with GitHub Script ---
+      - name: Create/Update Parent Issue and Sub-issues
+        uses: actions/github-script@v7
         env:
-          HAS_VULNS: ${{ steps.npm_audit.outputs.has_issues }}
+          HAS_NPM_VULNS: ${{ steps.npm_audit.outputs.has_issues }}
           HAS_BUILD_FAIL: ${{ steps.next_build.outputs.build_failed }}
+          HAS_CODEQL_ALERTS: ${{ steps.fetch-codeql.outputs.alert_count }}
         with:
           script: |
             const fs = require('fs');
             const prNumber = context.payload.pull_request?.number;
-            if (!prNumber) {
-              console.log('Not a pull request, skipping');
-              return;
+
+            // Determine the issue "scope": either a specific PR or a general weekly audit
+            let parentLabel = 'audit-parent-weekly';
+            let titlePrefix = 'Weekly Security & Health Audit';
+            if (prNumber) {
+              parentLabel = `audit-parent-pr-${prNumber}`;
+              titlePrefix = `Audit for PR #${prNumber}`;
+            } else if (context.eventName === 'code_scanning_alert') {
+              parentLabel = 'audit-parent-codeql';
+              titlePrefix = `Code Scanning Alert: ${context.payload.alert.rule.security_severity_level} - ${context.payload.alert.rule.name}`;
+            } else if (context.eventName === 'dependabot_alert') {
+              parentLabel = 'audit-parent-dependabot';
+              titlePrefix = `Dependabot Alert: ${context.payload.alert.security_advisory.summary}`;
             }
 
-            const hasVulns = parseInt(process.env.HAS_VULNS) > 0;
+            const hasNpmVulns = parseInt(process.env.HAS_NPM_VULNS) > 0;
             const hasBuildFail = process.env.HAS_BUILD_FAIL === 'true';
-            const hasProblems = hasVulns || hasBuildFail;
+            const hasCodeQlAlerts = parseInt(process.env.HAS_CODEQL_ALERTS) > 0;
 
-            // ----- 1. Find or create Parent Issue for this PR -----
-            const parentLabel = `audit-parent-pr-${prNumber}`;
+            // 1. Find or create the parent issue
             let parentNumber = null;
-
             const { data: existingParents } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               labels: [parentLabel],
               state: 'open'
             });
-
             if (existingParents.length > 0) {
               parentNumber = existingParents[0].number;
             } else {
               const { data: newParent } = await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `📊 Audit results for PR #${prNumber}`,
-                body: `This parent issue tracks automated audit findings for PR #${prNumber}.\n\n**Run time:** ${new Date().toISOString()}`,
+                title: `📊 ${titlePrefix}`,
+                body: `This parent issue tracks automated security and audit results.\n\n**Run type:** ${context.eventName}\n**Time:** ${new Date().toISOString()}${prNumber ? `\n**PR:** #${prNumber}` : ''}`,
                 labels: ['automated-audit', parentLabel]
               });
               parentNumber = newParent.number;
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: `📋 Audit results are tracked in parent issue #${parentNumber}`
-              });
+              // Post comment to PR linking to parent issue (if triggered by PR)
+              if (prNumber) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `📋 Audit results are tracked here: #${parentNumber}`
+                });
+              }
             }
 
-            // ----- 2. Helper to manage a sub‑issue (create if problem exists, close if resolved) -----
+            // 2. Helper function to manage sub-issues
             async function manageSubIssue(title, labelSuffix, content, problemExists) {
               const subLabel = `audit-sub-${labelSuffix}`;
               const { data: existingSubs } = await github.rest.issues.listForRepo({
@@ -111,10 +147,9 @@ jobs:
                 labels: [subLabel],
                 state: 'open'
               });
-
               if (problemExists) {
                 if (existingSubs.length === 0) {
-                  // Create new sub-issue
+                  // Create a new sub-issue
                   const { data: newSub } = await github.rest.issues.create({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -122,15 +157,17 @@ jobs:
                     body: `${content}\n\n**Parent issue:** #${parentNumber}\n**Last updated:** ${new Date().toISOString()}`,
                     labels: ['audit-subissue', subLabel]
                   });
-                  // Comment on PR linking the sub-issue
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: prNumber,
-                    body: `🔍 Created sub‑issue: #${newSub.number} – ${title}`
-                  });
+                  // If this is a single alert from a webhook, link it immediately
+                  if (context.eventName === 'code_scanning_alert' || context.eventName === 'dependabot_alert') {
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: parentNumber,
+                      body: `🚨 New sub-issue created: #${newSub.number} – ${title}`
+                    });
+                  }
                 } else {
-                  // Update existing sub-issue body (optional)
+                  // Update existing sub-issue body
                   await github.rest.issues.update({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -138,34 +175,21 @@ jobs:
                     body: `${content}\n\n**Parent issue:** #${parentNumber}\n**Last updated:** ${new Date().toISOString()}`
                   });
                 }
-              } else {
-                // No problem – close any open sub-issue
-                for (const sub of existingSubs) {
-                  await github.rest.issues.update({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: sub.number,
-                    state: 'closed',
-                    state_reason: 'completed'
-                  });
-                }
+              } else if (existingSubs.length > 0) {
+                // Problem is resolved; close the sub-issue
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existingSubs[0].number,
+                  state: 'closed',
+                  state_reason: 'completed'
+                });
               }
             }
 
-            // ----- 3. Create/update the two sub‑issues -----
-            // Sub‑issue 1: npm Audit
-            let auditContent = '';
-            if (hasVulns && fs.existsSync('audit-results.json')) {
-              const auditJson = fs.readFileSync('audit-results.json', 'utf8');
-              const parsed = JSON.parse(auditJson);
-              const vulnCount = Object.keys(parsed.vulnerabilities || {}).length;
-              auditContent = `## 📦 npm Audit Report\n\nFound **${vulnCount}** vulnerability(ies).\n\n\`\`\`json\n${JSON.stringify(parsed.vulnerabilities, null, 2)}\n\`\`\``;
-            } else {
-              auditContent = '## ✅ npm Audit\n\nNo vulnerabilities found.';
-            }
-            await manageSubIssue('📦 npm Audit', 'npm-audit', auditContent, hasVulns);
+            // 3. Create or update sub-issues based on scan results
 
-            // Sub‑issue 2: Next.js Build Failure
+            // First, handle build failures
             let buildContent = '';
             if (hasBuildFail && fs.existsSync('build-output.txt')) {
               const buildLog = fs.readFileSync('build-output.txt', 'utf8');
@@ -175,10 +199,35 @@ jobs:
             }
             await manageSubIssue('⚠️ Next.js Build Failure', 'build-failure', buildContent, hasBuildFail);
 
-            // ----- 4. Update parent issue summary -----
-            const parentBody = `# Audit Summary for PR #${prNumber}\n\n**Last run:** ${new Date().toISOString()}\n\n${
-              hasProblems ? '⚠️ **Issues detected** – see sub‑issues below.' : '✅ **All checks passed** – no open sub‑issues.'
-            }\n\n### Sub‑issues\n- ${hasVulns ? '📦 npm Audit (open)' : '📦 npm Audit (resolved)'}\n- ${hasBuildFail ? '⚠️ Build Failure (open)' : '⚠️ Build Failure (resolved)'}`;
+            // Second, handle npm audit results
+            let npmContent = '';
+            if (hasNpmVulns && fs.existsSync('audit-results.json')) {
+              const auditJson = fs.readFileSync('audit-results.json', 'utf8');
+              const parsed = JSON.parse(auditJson);
+              const vulnCount = Object.keys(parsed.vulnerabilities || {}).length;
+              npmContent = `## 📦 npm Audit Report\n\nFound **${vulnCount}** vulnerability(ies).\n\n\`\`\`json\n${JSON.stringify(parsed.vulnerabilities, null, 2)}\n\`\`\``;
+            } else {
+              npmContent = '## ✅ npm Audit\n\nNo vulnerabilities found.';
+            }
+            await manageSubIssue('📦 npm Audit', 'npm-audit', npmContent, hasNpmVulns);
+
+            // Third, handle CodeQL alerts (one sub-issue per distinct alert)
+            if (fs.existsSync('codeql-alerts.json')) {
+              const alertsData = JSON.parse(fs.readFileSync('codeql-alerts.json', 'utf8'));
+              for (const alert of alertsData) {
+                const title = `🔒 CodeQL Alert: ${alert.rule.name}`;
+                const content = `**Severity:** ${alert.rule.security_severity_level}\n**Description:** ${alert.rule.description}\n**File:** \`${alert.most_recent_instance.location.path}\`\n**Line:** ${alert.most_recent_instance.location.start_line}\n\n[View on GitHub](${alert.html_url})`;
+                await manageSubIssue(title, `codeql-${alert.number}`, content, true);
+              }
+            }
+
+            // Update parent issue status
+            const hasProblems = hasBuildFail || hasNpmVulns || hasCodeQlAlerts;
+            const parentBody = `# Audit Summary\n\n**Last run:** ${new Date().toISOString()}\n\n${
+              hasProblems ? '⚠️ **Issues detected** – see sub-issues below.' : '✅ **All checks passed** – no open sub-issues.'
+            }\n\n### Sub-issues\n${hasBuildFail ? '- ⚠️ Build Failure (open)\n' : '- ✅ Build Failure (resolved)\n'}${
+              hasNpmVulns ? '- 📦 npm Audit (open)\n' : '- ✅ npm Audit (resolved)\n'}${
+              hasCodeQlAlerts ? '- 🔒 CodeQL Alerts (open)\n' : '- ✅ CodeQL Alerts (resolved)\n'}`;
 
             await github.rest.issues.update({
               owner: context.repo.owner,
