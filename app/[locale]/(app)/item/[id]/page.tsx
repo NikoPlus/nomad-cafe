@@ -279,16 +279,13 @@
 //   )
 // }
 
-
-
-// app/[locale]/(app)/item/[id]/page.tsx
-
-import { notFound } from 'next/navigation';
 import { locales } from '@/i18n';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { SAMPLE_MENU } from '../../menu-data';
 import ItemClient from './ItemClient';
+import { notFound } from 'next/navigation';
 
-// Generate all possible [locale, id] pairs from the actual menu
+// Generate all possible static paths (locale × item ID)
 export async function generateStaticParams() {
   const itemIds = SAMPLE_MENU.map((item) => item.id);
   const params: Array<{ locale: string; id: string }> = [];
@@ -301,18 +298,26 @@ export async function generateStaticParams() {
   return params;
 }
 
-// Server Component – resolves the item and passes it to the client
 export default async function ItemPage({
   params,
 }: {
   params: Promise<{ locale: string; id: string }>;
 }) {
-  const { id } = await params;
-  const item = SAMPLE_MENU.find((m) => m.id === id);
+  const { locale, id } = await params;
+  // Enable static rendering for this locale (required for next-intl)
+  setRequestLocale(locale);
 
+  const item = SAMPLE_MENU.find((m) => m.id === id);
   if (!item) {
     notFound();
   }
 
-  return <ItemClient item={item} />;
+  // Pre‑fetch translations for this specific item
+  const t = await getTranslations({ locale, namespace: `items.${id}` });
+  const preloadedTranslations = {
+    title: t('title'),
+    description: t('description'),
+  };
+
+  return <ItemClient item={item} preloadedTranslations={preloadedTranslations} />;
 }

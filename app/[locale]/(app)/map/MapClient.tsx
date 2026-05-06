@@ -1,21 +1,26 @@
-// app/[locale]/(app)/map/MapClient.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 
 export default function MapClient() {
   const [isBrowser, setIsBrowser] = useState(false);
-  const [MapComponent, setMapComponent] = useState<any>(null);
 
   useEffect(() => {
     setIsBrowser(true);
-    // Dynamically import your map component and set to state
-    import("@/app/[locale]/(app)/map/page").then((mod) => setMapComponent(() => mod.default));
   }, []);
 
-  if (!isBrowser || !MapComponent) {
-    return <div className="w-full h-96 animate-pulse bg-muted">Loading map...</div>;
+  if (!isBrowser) {
+    return (
+      <div className="w-full h-96 bg-muted animate-pulse rounded-lg flex items-center justify-center">
+        <p className="text-muted-foreground">Loading map…</p>
+      </div>
+    );
   }
 
-  return <MapComponent />;
+  // You can later replace this placeholder with your actual map component
+  return (
+    <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
+      <p className="text-muted-foreground">Interactive map will be added here.</p>
+    </div>
+  );
 }

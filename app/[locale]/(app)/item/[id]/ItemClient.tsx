@@ -1,6 +1,4 @@
-// app/[locale]/(app)/item/[id]/ItemClient.tsx
-
-"use client";   // must be first line
+"use client";
 
 import * as React from "react";
 import Image from "next/image";
@@ -16,6 +14,7 @@ import { formatTon } from "@/utils/ton";
 import { ArrowLeft, Plus, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+// Types
 type Comment = {
   id: string;
   phone: string;
@@ -25,7 +24,7 @@ type Comment = {
   date: string;
 };
 
-// Sample comments keyed by item id – you can move this to a database later
+// Sample comments (in real app, fetch from API)
 const SAMPLE_COMMENTS: Record<string, Comment[]> = {
   latte: [
     { id: "1", phone: "+1234567890", name: "Sarah", text: "Best latte in town!", rating: 5, date: "2025-01-15" },
@@ -39,18 +38,20 @@ const SAMPLE_COMMENTS: Record<string, Comment[]> = {
 interface ItemClientProps {
   item: {
     id: string;
-    title?: string;      // will be overridden by i18n
-    description?: string;
     imageUrl: string;
     priceTon: number;
     discount?: number;
     ingredients?: string[];
   };
+  preloadedTranslations: {
+    title: string;
+    description: string;
+  };
 }
 
-export default function ItemClient({ item }: ItemClientProps) {
+export default function ItemClient({ item, preloadedTranslations }: ItemClientProps) {
   const { addItem } = useCart();
-  const t = useTranslations();
+  const t = useTranslations(); // for global translations (reviews, buttons, etc.)
 
   const [comments, setComments] = React.useState<Comment[]>(SAMPLE_COMMENTS[item.id] || []);
   const [phone, setPhone] = React.useState("");
@@ -59,8 +60,6 @@ export default function ItemClient({ item }: ItemClientProps) {
   const [rating, setRating] = React.useState(5);
 
   const discountedPrice = item.discount ? item.priceTon * (1 - item.discount / 100) : item.priceTon;
-  const itemTitle = t(`items.${item.id}.title`);
-  const itemDescription = t(`items.${item.id}.description`);
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,18 +81,6 @@ export default function ItemClient({ item }: ItemClientProps) {
     setRating(5);
   };
 
-  // If item not found (shouldn't happen because server component handles 404)
-  if (!item) {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-        <h2 className="text-2xl font-bold">{t('item.notFound')}</h2>
-        <Button asChild className="mt-4">
-          <Link href="/">{t('menu.backToMenu')}</Link>
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <main className="pb-8">
       <Button asChild variant="ghost" className="mb-4 gap-2">
@@ -104,11 +91,12 @@ export default function ItemClient({ item }: ItemClientProps) {
       </Button>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+        {/* Image section */}
         <div>
           <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted">
             <Image
               src={item.imageUrl || "/placeholder.svg?height=600&width=600&query=cafe+item"}
-              alt={`${itemTitle} from ${t('app.title')}`}
+              alt={`${preloadedTranslations.title} from ${t('app.title')}`}
               fill
               className="object-cover"
               priority
@@ -124,11 +112,12 @@ export default function ItemClient({ item }: ItemClientProps) {
           </div>
         </div>
 
+        {/* Details section */}
         <div className="flex flex-col gap-4 sm:gap-6">
           <div>
-            <h1 className="text-balance text-3xl font-bold">{itemTitle}</h1>
+            <h1 className="text-balance text-3xl font-bold">{preloadedTranslations.title}</h1>
             <p className="mt-2 text-pretty leading-relaxed text-muted-foreground">
-              {itemDescription}
+              {preloadedTranslations.description}
             </p>
           </div>
 
@@ -170,7 +159,12 @@ export default function ItemClient({ item }: ItemClientProps) {
           <Button
             onClick={() =>
               addItem(
-                { id: item.id, title: itemTitle, priceTon: item.priceTon, imageUrl: item.imageUrl },
+                {
+                  id: item.id,
+                  title: preloadedTranslations.title,
+                  priceTon: item.priceTon,
+                  imageUrl: item.imageUrl,
+                },
                 1
               )
             }
@@ -184,6 +178,7 @@ export default function ItemClient({ item }: ItemClientProps) {
         </div>
       </div>
 
+      {/* Reviews section */}
       <div className="mt-12">
         <h2 className="mb-6 text-2xl font-bold">{t('reviews.title')}</h2>
 
