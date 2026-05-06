@@ -1,0 +1,14 @@
+name: ⚡ Performance
+description: Report a performance issue
+title: "[PERF]: "
+labels: ["performance"]
+body:
+  - type: input
+    id: metric
+    attributes:
+      label: Metric affected
+      placeholder: e.g., First Contentful Paint, Build time, Bundle size
+  - type: textarea
+    id: before-after
+    attributes:
+      label: Before / After comparison

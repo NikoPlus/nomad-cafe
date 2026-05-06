@@ -1,0 +1,17 @@
+name: 📖 Documentation
+description: Report a documentation issue or suggest an improvement
+title: "[DOCS]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for helping improve the docs!"
+  - type: input
+    id: page
+    attributes:
+      label: Page / Section
+      placeholder: e.g., README, /docs/deployment
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong or missing?
