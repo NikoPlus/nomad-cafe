@@ -4,12 +4,8 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
   schedule:
-    - cron: '0 9 * * 1'  # Run every Monday at 9 AM UTC
-  code_scanning_alert:
-    types: [created]    # Trigger when a new code scanning alert is found
-  dependabot_alert:
-    types: [created]    # Trigger when a new Dependabot alert is found
-  workflow_dispatch:     # Allow manual run
+    - cron: '0 9 * * 1'   # Every Monday at 09:00 UTC
+  workflow_dispatch:        # Manual trigger
 
 permissions:
   contents: read
@@ -29,7 +25,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -42,33 +38,43 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # --- Code Scanning Logic ---
-      - name: Fetch CodeQL Alerts via API
-        id: fetch-codeql
-        if: always()
+      # ---- Fetch CodeQL alerts via API ----
+      - name: Fetch CodeQL alerts
+        id: codeql
         continue-on-error: true
         run: |
-          echo "Fetching code scanning alerts via API"
           gh api \
             -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/code-scanning/alerts?state=open > codeql-alerts.json || true
-          ALERT_COUNT=$(jq 'length' codeql-alerts.json 2>/dev/null || echo "0")
-          echo "alert_count=$ALERT_COUNT" >> $GITHUB_OUTPUT
+            /repos/${{ github.repository }}/code-scanning/alerts?state=open > codeql-alerts.json || echo "[]" > codeql-alerts.json
+          count=$(jq 'length' codeql-alerts.json)
+          echo "count=$count" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # ---- Fetch Dependabot alerts via API ----
+      - name: Fetch Dependabot alerts
+        id: dependabot
+        continue-on-error: true
+        run: |
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/dependabot/alerts?state=open > dependabot-alerts.json || echo "[]" > dependabot-alerts.json
+          count=$(jq 'length' dependabot-alerts.json)
+          echo "count=$count" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---- npm audit ----
       - name: Run npm audit
         id: npm_audit
-        if: always()
         continue-on-error: true
         run: |
           npm audit --json > audit-results.json || true
           echo "has_issues=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo '0')" >> $GITHUB_OUTPUT
 
-      - name: Next.js Build test
+      # ---- Next.js build test ----
+      - name: Next.js build test
         id: next_build
-        if: always()
         continue-on-error: true
         run: |
           NEXT_EXPORT=true pnpm run build > build-output.txt 2>&1 || true
@@ -78,37 +84,34 @@ jobs:
             echo "build_failed=false" >> $GITHUB_OUTPUT
           fi
 
-      # --- Master Issue Management with GitHub Script ---
-      - name: Create/Update Parent Issue and Sub-issues
+      # ---- Create/Update Parent Issue and Sub-issues ----
+      - name: Manage issues via GitHub Script
         uses: actions/github-script@v7
         env:
           HAS_NPM_VULNS: ${{ steps.npm_audit.outputs.has_issues }}
           HAS_BUILD_FAIL: ${{ steps.next_build.outputs.build_failed }}
-          HAS_CODEQL_ALERTS: ${{ steps.fetch-codeql.outputs.alert_count }}
+          HAS_CODEQL: ${{ steps.codeql.outputs.count }}
+          HAS_DEPENDABOT: ${{ steps.dependabot.outputs.count }}
         with:
           script: |
             const fs = require('fs');
             const prNumber = context.payload.pull_request?.number;
 
-            // Determine the issue "scope": either a specific PR or a general weekly audit
+            // Determine parent label & title
             let parentLabel = 'audit-parent-weekly';
             let titlePrefix = 'Weekly Security & Health Audit';
             if (prNumber) {
               parentLabel = `audit-parent-pr-${prNumber}`;
               titlePrefix = `Audit for PR #${prNumber}`;
-            } else if (context.eventName === 'code_scanning_alert') {
-              parentLabel = 'audit-parent-codeql';
-              titlePrefix = `Code Scanning Alert: ${context.payload.alert.rule.security_severity_level} - ${context.payload.alert.rule.name}`;
-            } else if (context.eventName === 'dependabot_alert') {
-              parentLabel = 'audit-parent-dependabot';
-              titlePrefix = `Dependabot Alert: ${context.payload.alert.security_advisory.summary}`;
             }
 
             const hasNpmVulns = parseInt(process.env.HAS_NPM_VULNS) > 0;
             const hasBuildFail = process.env.HAS_BUILD_FAIL === 'true';
-            const hasCodeQlAlerts = parseInt(process.env.HAS_CODEQL_ALERTS) > 0;
+            const hasCodeQl = parseInt(process.env.HAS_CODEQL) > 0;
+            const hasDependabot = parseInt(process.env.HAS_DEPENDABOT) > 0;
+            const hasProblems = hasNpmVulns || hasBuildFail || hasCodeQl || hasDependabot;
 
-            // 1. Find or create the parent issue
+            // 1. Find or create Parent Issue
             let parentNumber = null;
             const { data: existingParents } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -123,22 +126,21 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: `📊 ${titlePrefix}`,
-                body: `This parent issue tracks automated security and audit results.\n\n**Run type:** ${context.eventName}\n**Time:** ${new Date().toISOString()}${prNumber ? `\n**PR:** #${prNumber}` : ''}`,
+                body: `This parent issue tracks automated audit results.\n\n**Run type:** ${context.eventName}\n**Time:** ${new Date().toISOString()}${prNumber ? `\n**PR:** #${prNumber}` : ''}`,
                 labels: ['automated-audit', parentLabel]
               });
               parentNumber = newParent.number;
-              // Post comment to PR linking to parent issue (if triggered by PR)
               if (prNumber) {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: prNumber,
-                  body: `📋 Audit results are tracked here: #${parentNumber}`
+                  body: `📋 Audit results are tracked in parent issue #${parentNumber}`
                 });
               }
             }
 
-            // 2. Helper function to manage sub-issues
+            // 2. Helper: create/update sub-issue
             async function manageSubIssue(title, labelSuffix, content, problemExists) {
               const subLabel = `audit-sub-${labelSuffix}`;
               const { data: existingSubs } = await github.rest.issues.listForRepo({
@@ -149,25 +151,14 @@ jobs:
               });
               if (problemExists) {
                 if (existingSubs.length === 0) {
-                  // Create a new sub-issue
-                  const { data: newSub } = await github.rest.issues.create({
+                  await github.rest.issues.create({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     title: title,
                     body: `${content}\n\n**Parent issue:** #${parentNumber}\n**Last updated:** ${new Date().toISOString()}`,
                     labels: ['audit-subissue', subLabel]
                   });
-                  // If this is a single alert from a webhook, link it immediately
-                  if (context.eventName === 'code_scanning_alert' || context.eventName === 'dependabot_alert') {
-                    await github.rest.issues.createComment({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: parentNumber,
-                      body: `🚨 New sub-issue created: #${newSub.number} – ${title}`
-                    });
-                  }
                 } else {
-                  // Update existing sub-issue body
                   await github.rest.issues.update({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -176,7 +167,6 @@ jobs:
                   });
                 }
               } else if (existingSubs.length > 0) {
-                // Problem is resolved; close the sub-issue
                 await github.rest.issues.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -187,19 +177,8 @@ jobs:
               }
             }
 
-            // 3. Create or update sub-issues based on scan results
-
-            // First, handle build failures
-            let buildContent = '';
-            if (hasBuildFail && fs.existsSync('build-output.txt')) {
-              const buildLog = fs.readFileSync('build-output.txt', 'utf8');
-              buildContent = `## ⚠️ Next.js Build Failure\n\n\`\`\`\n${buildLog.slice(0, 5000)}\n\`\`\``;
-            } else {
-              buildContent = '## ✅ Next.js Build\n\nBuild succeeded.';
-            }
-            await manageSubIssue('⚠️ Next.js Build Failure', 'build-failure', buildContent, hasBuildFail);
-
-            // Second, handle npm audit results
+            // 3. Build sub‑issue contents
+            // npm audit
             let npmContent = '';
             if (hasNpmVulns && fs.existsSync('audit-results.json')) {
               const auditJson = fs.readFileSync('audit-results.json', 'utf8');
@@ -211,23 +190,43 @@ jobs:
             }
             await manageSubIssue('📦 npm Audit', 'npm-audit', npmContent, hasNpmVulns);
 
-            // Third, handle CodeQL alerts (one sub-issue per distinct alert)
+            // Build failure
+            let buildContent = '';
+            if (hasBuildFail && fs.existsSync('build-output.txt')) {
+              const buildLog = fs.readFileSync('build-output.txt', 'utf8');
+              buildContent = `## ⚠️ Next.js Build Failure\n\n\`\`\`\n${buildLog.slice(0, 5000)}\n\`\`\``;
+            } else {
+              buildContent = '## ✅ Next.js Build\n\nBuild succeeded.';
+            }
+            await manageSubIssue('⚠️ Next.js Build Failure', 'build-failure', buildContent, hasBuildFail);
+
+            // CodeQL alerts (one sub‑issue per alert)
             if (fs.existsSync('codeql-alerts.json')) {
-              const alertsData = JSON.parse(fs.readFileSync('codeql-alerts.json', 'utf8'));
-              for (const alert of alertsData) {
-                const title = `🔒 CodeQL Alert: ${alert.rule.name}`;
+              const alerts = JSON.parse(fs.readFileSync('codeql-alerts.json', 'utf8'));
+              for (const alert of alerts) {
+                const title = `🔒 CodeQL: ${alert.rule.name}`;
                 const content = `**Severity:** ${alert.rule.security_severity_level}\n**Description:** ${alert.rule.description}\n**File:** \`${alert.most_recent_instance.location.path}\`\n**Line:** ${alert.most_recent_instance.location.start_line}\n\n[View on GitHub](${alert.html_url})`;
                 await manageSubIssue(title, `codeql-${alert.number}`, content, true);
               }
             }
 
-            // Update parent issue status
-            const hasProblems = hasBuildFail || hasNpmVulns || hasCodeQlAlerts;
+            // Dependabot alerts (one sub‑issue per alert)
+            if (fs.existsSync('dependabot-alerts.json')) {
+              const alerts = JSON.parse(fs.readFileSync('dependabot-alerts.json', 'utf8'));
+              for (const alert of alerts) {
+                const title = `📦 Dependabot: ${alert.security_advisory?.summary || alert.package?.name}`;
+                const content = `**Severity:** ${alert.security_advisory?.severity}\n**Package:** \`${alert.security_advisory?.package?.name || alert.package?.name}\`\n**Vulnerable version range:** ${alert.security_vulnerability?.vulnerable_version_range}\n**Patched version:** ${alert.security_vulnerability?.first_patched_version?.identifier}\n\n[View on GitHub](${alert.html_url})`;
+                await manageSubIssue(title, `dependabot-${alert.number}`, content, true);
+              }
+            }
+
+            // 4. Update parent body
             const parentBody = `# Audit Summary\n\n**Last run:** ${new Date().toISOString()}\n\n${
-              hasProblems ? '⚠️ **Issues detected** – see sub-issues below.' : '✅ **All checks passed** – no open sub-issues.'
-            }\n\n### Sub-issues\n${hasBuildFail ? '- ⚠️ Build Failure (open)\n' : '- ✅ Build Failure (resolved)\n'}${
+              hasProblems ? '⚠️ **Issues detected** – see sub‑issues below.' : '✅ **All checks passed** – no open sub‑issues.'
+            }\n\n### Sub‑issues\n${hasBuildFail ? '- ⚠️ Build Failure (open)\n' : '- ✅ Build Failure (resolved)\n'}${
               hasNpmVulns ? '- 📦 npm Audit (open)\n' : '- ✅ npm Audit (resolved)\n'}${
-              hasCodeQlAlerts ? '- 🔒 CodeQL Alerts (open)\n' : '- ✅ CodeQL Alerts (resolved)\n'}`;
+              hasCodeQl ? '- 🔒 CodeQL Alerts (open)\n' : '- ✅ CodeQL Alerts (resolved)\n'}${
+              hasDependabot ? '- 📦 Dependabot Alerts (open)\n' : '- ✅ Dependabot Alerts (resolved)\n'}`;
 
             await github.rest.issues.update({
               owner: context.repo.owner,
