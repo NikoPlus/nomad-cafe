@@ -281,16 +281,16 @@
 
 
 
+// app/[locale]/(app)/item/[id]/page.tsx
+
+import { notFound } from 'next/navigation';
 import { locales } from '@/i18n';
+import { SAMPLE_MENU } from '../../menu-data';
 import ItemClient from './ItemClient';
 
+// Generate all possible [locale, id] pairs from the actual menu
 export async function generateStaticParams() {
-  async function getAllItemIds(): Promise<string[]> {
-    // 🔁 REPLACE with real item IDs from your CMS / database
-    return ['item-1', 'item-2', 'item-3'];
-  }
-
-  const itemIds = await getAllItemIds();
+  const itemIds = SAMPLE_MENU.map((item) => item.id);
   const params: Array<{ locale: string; id: string }> = [];
 
   for (const locale of locales) {
@@ -301,6 +301,18 @@ export async function generateStaticParams() {
   return params;
 }
 
-export default function ItemPage() {
-  return <ItemClient />;
+// Server Component – resolves the item and passes it to the client
+export default async function ItemPage({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}) {
+  const { id } = await params;
+  const item = SAMPLE_MENU.find((m) => m.id === id);
+
+  if (!item) {
+    notFound();
+  }
+
+  return <ItemClient item={item} />;
 }

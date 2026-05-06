@@ -9,7 +9,7 @@
     "start": "next start",
     "audit": "npm audit --json || true",
     "type-check": "tsc --noEmit",
-    "export": "next build && next export"
+    "export": "next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
