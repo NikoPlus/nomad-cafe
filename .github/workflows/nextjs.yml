@@ -29,10 +29,10 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9  # or latest stable, e.g., 9 or 10
+          version: 10  # or latest stable, e.g., 9 or 10
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile  # use --force only if necessary
+        run: pnpm install --force  # use --force only if necessary
 
       - name: Set environment variables
         run: echo "NEXT_PUBLIC_BASE_PATH=/nomad-cafe" >> $GITHUB_ENV
