@@ -1,101 +1,69 @@
-name: Audit Security & Create Issue Chain
+name: Process Audit & Create Issues
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: ["Audit PR (unprivileged)"]
+    types:
+      - completed
   schedule:
-    - cron: '0 9 * * 1'   # Every Monday at 09:00 UTC
-  workflow_dispatch:        # Manual trigger
+    - cron: '0 9 * * 1'        # Weekly full audit
+  workflow_dispatch:            # Manual run
 
 permissions:
   contents: read
   issues: write
   pull-requests: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  audit:
+  process:
     runs-on: ubuntu-latest
+    if: >
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          name: audit-results
+          path: ./artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # ---- Fetch CodeQL alerts via API ----
-      - name: Fetch CodeQL alerts
+      - name: Fetch CodeQL alerts (API)
         id: codeql
         continue-on-error: true
         run: |
           gh api \
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/code-scanning/alerts?state=open > codeql-alerts.json || echo "[]" > codeql-alerts.json
-          count=$(jq 'length' codeql-alerts.json)
-          echo "count=$count" >> $GITHUB_OUTPUT
+          echo "count=$(jq 'length' codeql-alerts.json)" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---- Fetch Dependabot alerts via API ----
-      - name: Fetch Dependabot alerts
+      - name: Fetch Dependabot alerts (API)
         id: dependabot
         continue-on-error: true
         run: |
           gh api \
             -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/dependabot/alerts?state=open > dependabot-alerts.json || echo "[]" > dependabot-alerts.json
-          count=$(jq 'length' dependabot-alerts.json)
-          echo "count=$count" >> $GITHUB_OUTPUT
+          echo "count=$(jq 'length' dependabot-alerts.json)" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---- npm audit ----
-      - name: Run npm audit
-        id: npm_audit
-        continue-on-error: true
-        run: |
-          npm audit --json > audit-results.json || true
-          echo "has_issues=$(jq '.vulnerabilities | length' audit-results.json 2>/dev/null || echo '0')" >> $GITHUB_OUTPUT
-
-      # ---- Next.js build test ----
-      - name: Next.js build test
-        id: next_build
-        continue-on-error: true
-        run: |
-          NEXT_EXPORT=true pnpm run build > build-output.txt 2>&1 || true
-          if grep -qi "error\|failed" build-output.txt; then
-            echo "build_failed=true" >> $GITHUB_OUTPUT
-          else
-            echo "build_failed=false" >> $GITHUB_OUTPUT
-          fi
-
-      # ---- Create/Update Parent Issue and Sub-issues ----
-      - name: Manage issues via GitHub Script
+      - name: Create/Update Parent Issue & Sub‑issues
         uses: actions/github-script@v7
         env:
-          HAS_NPM_VULNS: ${{ steps.npm_audit.outputs.has_issues }}
-          HAS_BUILD_FAIL: ${{ steps.next_build.outputs.build_failed }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          HAS_NPM: ${{ fromJSON(steps.npm.outputs.has_issues) }}
+          HAS_BUILD: ${{ fromJSON(steps.build.outputs.build_failed) }}
           HAS_CODEQL: ${{ steps.codeql.outputs.count }}
           HAS_DEPENDABOT: ${{ steps.dependabot.outputs.count }}
         with:
           script: |
             const fs = require('fs');
-            const prNumber = context.payload.pull_request?.number;
+            const prNumber = process.env.PR_NUMBER ? parseInt(process.env.PR_NUMBER) : null;
 
             // Determine parent label & title
             let parentLabel = 'audit-parent-weekly';
@@ -103,15 +71,42 @@ jobs:
             if (prNumber) {
               parentLabel = `audit-parent-pr-${prNumber}`;
               titlePrefix = `Audit for PR #${prNumber}`;
+            } else if (context.eventName === 'schedule') {
+              parentLabel = 'audit-parent-weekly';
+              titlePrefix = 'Weekly Security & Health Audit';
+            } else {
+              parentLabel = 'audit-parent-manual';
+              titlePrefix = 'Manual Audit Run';
             }
 
-            const hasNpmVulns = parseInt(process.env.HAS_NPM_VULNS) > 0;
-            const hasBuildFail = process.env.HAS_BUILD_FAIL === 'true';
+            // Read results from artifacts (if they exist)
+            let hasNpmVulns = false;
+            let hasBuildFail = false;
+            let npmContent = '## ✅ npm Audit\n\nNo vulnerabilities found.';
+            let buildContent = '## ✅ Next.js Build\n\nBuild succeeded.';
+
+            if (fs.existsSync('./artifacts/audit-results.json')) {
+              const auditJson = fs.readFileSync('./artifacts/audit-results.json', 'utf8');
+              const parsed = JSON.parse(auditJson);
+              const vulnCount = Object.keys(parsed.vulnerabilities || {}).length;
+              hasNpmVulns = vulnCount > 0;
+              if (hasNpmVulns) {
+                npmContent = `## 📦 npm Audit Report\n\nFound **${vulnCount}** vulnerability(ies).\n\n\`\`\`json\n${JSON.stringify(parsed.vulnerabilities, null, 2)}\n\`\`\``;
+              }
+            }
+            if (fs.existsSync('./artifacts/build-output.txt')) {
+              const buildLog = fs.readFileSync('./artifacts/build-output.txt', 'utf8');
+              hasBuildFail = buildLog.includes('error') || buildLog.includes('failed');
+              if (hasBuildFail) {
+                buildContent = `## ⚠️ Next.js Build Failure\n\n\`\`\`\n${buildLog.slice(0, 5000)}\n\`\`\``;
+              }
+            }
+
             const hasCodeQl = parseInt(process.env.HAS_CODEQL) > 0;
             const hasDependabot = parseInt(process.env.HAS_DEPENDABOT) > 0;
             const hasProblems = hasNpmVulns || hasBuildFail || hasCodeQl || hasDependabot;
 
-            // 1. Find or create Parent Issue
+            // ---- 1. Find or create parent issue ----
             let parentNumber = null;
             const { data: existingParents } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -140,7 +135,7 @@ jobs:
               }
             }
 
-            // 2. Helper: create/update sub-issue
+            // ---- 2. Helper to manage sub‑issues ----
             async function manageSubIssue(title, labelSuffix, content, problemExists) {
               const subLabel = `audit-sub-${labelSuffix}`;
               const { data: existingSubs } = await github.rest.issues.listForRepo({
@@ -177,30 +172,11 @@ jobs:
               }
             }
 
-            // 3. Build sub‑issue contents
-            // npm audit
-            let npmContent = '';
-            if (hasNpmVulns && fs.existsSync('audit-results.json')) {
-              const auditJson = fs.readFileSync('audit-results.json', 'utf8');
-              const parsed = JSON.parse(auditJson);
-              const vulnCount = Object.keys(parsed.vulnerabilities || {}).length;
-              npmContent = `## 📦 npm Audit Report\n\nFound **${vulnCount}** vulnerability(ies).\n\n\`\`\`json\n${JSON.stringify(parsed.vulnerabilities, null, 2)}\n\`\`\``;
-            } else {
-              npmContent = '## ✅ npm Audit\n\nNo vulnerabilities found.';
-            }
+            // ---- 3. Create/update sub‑issues ----
             await manageSubIssue('📦 npm Audit', 'npm-audit', npmContent, hasNpmVulns);
-
-            // Build failure
-            let buildContent = '';
-            if (hasBuildFail && fs.existsSync('build-output.txt')) {
-              const buildLog = fs.readFileSync('build-output.txt', 'utf8');
-              buildContent = `## ⚠️ Next.js Build Failure\n\n\`\`\`\n${buildLog.slice(0, 5000)}\n\`\`\``;
-            } else {
-              buildContent = '## ✅ Next.js Build\n\nBuild succeeded.';
-            }
             await manageSubIssue('⚠️ Next.js Build Failure', 'build-failure', buildContent, hasBuildFail);
 
-            // CodeQL alerts (one sub‑issue per alert)
+            // CodeQL alerts – one sub‑issue per alert
             if (fs.existsSync('codeql-alerts.json')) {
               const alerts = JSON.parse(fs.readFileSync('codeql-alerts.json', 'utf8'));
               for (const alert of alerts) {
@@ -210,7 +186,7 @@ jobs:
               }
             }
 
-            // Dependabot alerts (one sub‑issue per alert)
+            // Dependabot alerts – one sub‑issue per alert
             if (fs.existsSync('dependabot-alerts.json')) {
               const alerts = JSON.parse(fs.readFileSync('dependabot-alerts.json', 'utf8'));
               for (const alert of alerts) {
@@ -220,7 +196,7 @@ jobs:
               }
             }
 
-            // 4. Update parent body
+            // ---- 4. Update parent issue body ----
             const parentBody = `# Audit Summary\n\n**Last run:** ${new Date().toISOString()}\n\n${
               hasProblems ? '⚠️ **Issues detected** – see sub‑issues below.' : '✅ **All checks passed** – no open sub‑issues.'
             }\n\n### Sub‑issues\n${hasBuildFail ? '- ⚠️ Build Failure (open)\n' : '- ✅ Build Failure (resolved)\n'}${
