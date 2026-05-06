@@ -1,92 +1,76 @@
-name: Bug report
-description: Report a bug
-
+name: 🐛 Bug Report
+description: File a bug report to help us improve
+title: "[BUG]: "
+labels: ["bug", "needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        To increase the chance of your bug getting fixed, open an issue FOR EACH bug. Do not report multiple problems in a single issue, otherwise they'll probably never get all fixed.
+        **⚠️ Important:**  
+        Please report each bug in a separate issue. Do not combine multiple issues in one report.
 
   - type: input
     id: version
     attributes:
-      label: Which version are you using?
-      description: Nomad-Cafe version or commit
+      label: Version
+      description: Which version of Nomad Cafe are you using?
+      placeholder: e.g., v1.0.0, commit hash, etc.
     validations:
       required: true
 
   - type: dropdown
-    id: os
+    id: environment
     attributes:
-      label: Which operating system are you using?
+      label: Environment
+      description: Where did you encounter this bug?
       multiple: true
       options:
-        - Linux amd64 standard
-        - Linux amd64 Docker
-        - Linux arm64 standard
-        - Linux arm64 Docker
-        - Linux arm7 standard
-        - Linux arm7 Docker
-        - Linux arm6 standard
-        - Linux arm6 Docker
-        - Windows amd64 standard
-        - Windows amd64 Docker (WSL backend)
-        - macOS amd64 standard
-        - macOS amd64 Docker
-        - Other (please describe)
+        - Local Development (npm run dev)
+        - Production Build (npm run build)
+        - Docker
+        - GitHub Pages
+        - Other
     validations:
       required: true
 
   - type: textarea
     id: description
     attributes:
-      label: Describe the issue
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: What happened? What did you expect to happen?
     validations:
       required: true
 
   - type: textarea
-    id: replica
+    id: reproduction
     attributes:
-      label: Describe how to replicate the issue
-      description: |
-        The maintainers must be able to REPLICATE your issue to solve it - therefore, describe in a very detailed way how to replicate it.
-      value: |
-        1. start the Nomad-Cafe
-        2. publish with ...
-        3. read with ...
+      label: Reproduction Steps
+      description: Step-by-step guide to reproduce the issue
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+      render: markdown
     validations:
       required: true
-
-  - type: textarea
-    id: conf
-    attributes:
-      label: Nomad-Cafe configuration
-      description: |
-        Nomad-Cafe configuration is often required to replicate the issue.
-      placeholder: Paste or drag the configuration file here
-      # render: shell
 
   - type: textarea
     id: logs
     attributes:
-      label: Nomad-Cafe logs
-      description: |
-        Nomad-Cafe logs are often useful to identify the issue. If you think this is the case, set the parameter 'logLevel' to 'debug' and attach logs.
-      placeholder: Paste or drag the log file here
-      # render: shell
+      label: Relevant Logs / Console Output
+      description: Paste any error messages, build logs, or console output
+      render: shell
+      placeholder: |
+        Error: Failed to compile
+        ./app/page.tsx:10:5
+        Type 'string' is not assignable to type 'number'.
 
   - type: textarea
-    id: network
+    id: screenshots
     attributes:
-      label: Network dump
-      description: |
-        If the bug arises when using MediaMTX with external hardware or software, the most helpful content you can provide is a dump of the data exchanged between the server and the target (network dump).
-
-        That can be generated in this way:
-          1. Download wireshark (https://www.wireshark.org/)
-          2. Start capturing on the interface used for exchanging packets
-            * If the server and the external hardware or software are both installed on your pc, the interface is probably "loopback", otherwise it's the one of your network card.
-          3. Start the server and replicate the issue
-          4. Stop capturing, save the result in .pcap format
-          5. Attach
-      placeholder: Attach the pcap file by dragging it here
+      label: Screenshots (if applicable)
+      description: Drag and drop images here to help explain the issue
+      placeholder: |
+        ![screenshot](url)
